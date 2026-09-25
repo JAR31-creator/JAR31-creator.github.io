@@ -56,8 +56,10 @@
   .comment{padding:10px 0;border-top:1px solid var(--rule);font-size:0.88rem;}
   .comment.reply{border-top:none;padding-top:6px;padding-bottom:0;border-left:2px solid var(--rule);margin-top:6px;}
   .reply-btn{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;padding:0;margin-top:4px;text-decoration:underline;display:inline-block;}
-  .comment-actions{display:flex;gap:12px;margin-top:4px;}
-  .comment-actions button{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;padding:0;text-decoration:underline;}
+  .comment-actions{display:flex;gap:14px;align-items:center;margin-top:6px;}
+  .comment-actions button{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;padding:0;display:flex;align-items:center;gap:3px;}
+  .comment-actions button:hover{color:var(--ink);}
+  .comment-actions button.liked{color:var(--game);}
   .edit-form{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:420px;}
   .edit-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;min-height:44px;}
   .edit-form button[type="submit"]{background:var(--ink);color:var(--paper);}
@@ -74,7 +76,8 @@
   .comment-input-wrap{position:relative;}
   .comment-input-wrap textarea{width:100%;box-sizing:border-box;padding-bottom:34px;}
   .comment-toolbar{position:absolute;bottom:8px;right:8px;display:flex;gap:8px;}
-  .comment-toolbar button{background:none;border:none;font-size:1.15rem;cursor:pointer;padding:0;line-height:1;}
+  .comment-toolbar button{background:none;border:none;cursor:pointer;padding:2px;line-height:1;display:flex;align-items:center;color:var(--ink-soft);}
+  .comment-toolbar button:hover{color:var(--ink);}
   .emoji-popup{position:absolute;bottom:38px;right:8px;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:6px;display:none;gap:4px;box-shadow:0 4px 10px rgba(28,27,25,0.12);z-index:5;}
   .emoji-popup.open{display:flex;}
   .emoji-popup button{background:none;border:none;font-size:1.1rem;cursor:pointer;padding:2px 4px;}
@@ -257,10 +260,18 @@
     const { data: reviews } = await sb.from('reviews').select('*').order('created_at', {ascending:false});
     const { data: comments } = await sb.from('comments').select('*').order('created_at', {ascending:true});
     const { data: likes } = await sb.from('likes').select('review_id, type');
+    const { data: commentLikes } = await sb.from('comment_likes').select('comment_id, user_id');
 
     ALL_REVIEWS = (reviews || []).map(r => ({
       ...r,
-      comments: (comments || []).filter(c => c.review_id === r.id),
+      comments: (comments || []).filter(c => c.review_id === r.id).map(c => {
+        const cLikes = (commentLikes || []).filter(cl => cl.comment_id === c.id);
+        return {
+          ...c,
+          likeCount: cLikes.length,
+          likerIds: cLikes.map(cl => cl.user_id)
+        };
+      }),
       likeCount: (likes || []).filter(l => l.review_id === r.id && l.type === 'like').length,
       dislikeCount: (likes || []).filter(l => l.review_id === r.id && l.type === 'dislike').length
     }));
@@ -280,18 +291,27 @@
     });
   }
 
+  const ICONS = {
+    like: (filled) => `<svg viewBox="0 0 20 20" width="15" height="15" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4"><path d="M10 17s-6-3.6-6-8.2C4 6 6 4.5 8 4.5c1 0 2 .6 2 .6s1-.6 2-.6c2 0 4 1.5 4 4.3 0 4.6-6 8.2-6 8.2z"/></svg>`,
+    reply: `<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 5L3 10l5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 10h9a4 4 0 0 1 4 4v1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    edit: `<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M13.5 3.5l3 3L6 17H3v-3z" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+    delete: `<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6h12" stroke-linecap="round"/><path d="M8 6V4h4v2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 6l0.7 10a1 1 0 0 0 1 0.9h5.6a1 1 0 0 0 1-0.9L14.5 6" stroke-linejoin="round"/></svg>`
+  };
+
   function renderComment(c, allComments, reviewId, depth){
     const replies = allComments.filter(x => x.parent_comment_id === c.id);
     const indent = Math.min(depth, 3) * 18;
     const isOwner = session && c.user_id === session.user.id;
+    const likedByMe = !!(session && c.likerIds.includes(session.user.id));
     return `
       <div class="comment ${depth > 0 ? 'reply' : ''}" style="margin-left:${indent}px;">
         <span class="who">${escapeHtml(c.author)}</span><span class="comment-text">${escapeHtml(c.body)}</span>
         ${c.image_url ? `<img class="comment-img" src="${c.image_url}" alt="attached image">` : ''}
         <div class="comment-actions">
-          ${session && profile ? `<button type="button" class="reply-btn" data-id="${c.id}" data-review="${reviewId}">Reply</button>` : ''}
-          ${isOwner ? `<button type="button" class="edit-btn" data-id="${c.id}">Edit</button>` : ''}
-          ${isOwner ? `<button type="button" class="delete-comment-btn" data-id="${c.id}">Delete</button>` : ''}
+          ${session && profile ? `<button type="button" class="comment-like-btn ${likedByMe ? 'liked' : ''}" data-id="${c.id}" title="${likedByMe ? 'Unlike' : 'Like'}" aria-label="${likedByMe ? 'Unlike' : 'Like'}">${ICONS.like(likedByMe)}<span>${c.likeCount}</span></button>` : ''}
+          ${session && profile ? `<button type="button" class="reply-btn" data-id="${c.id}" data-review="${reviewId}" title="Reply" aria-label="Reply">${ICONS.reply}</button>` : ''}
+          ${isOwner ? `<button type="button" class="edit-btn" data-id="${c.id}" title="Edit" aria-label="Edit">${ICONS.edit}</button>` : ''}
+          ${isOwner ? `<button type="button" class="delete-comment-btn" data-id="${c.id}" title="Delete" aria-label="Delete">${ICONS.delete}</button>` : ''}
         </div>
         <div class="reply-form-container" data-parent="${c.id}"></div>
         ${replies.map(r => renderComment(r, allComments, reviewId, depth + 1)).join('')}
@@ -398,8 +418,21 @@
               <div class="comment-input-wrap">
                 <textarea name="body" placeholder="Add a comment…" maxlength="500"></textarea>
                 <div class="comment-toolbar">
-                  <button type="button" class="emoji-toggle" title="Add emoji">😊</button>
-                  <button type="button" class="camera-toggle" title="Add photo/GIF">📷</button>
+                  <button type="button" class="emoji-toggle" title="Add emoji">
+                    <svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4">
+                      <circle cx="10" cy="10" r="8"/>
+                      <circle cx="7" cy="8.2" r="0.9" fill="currentColor" stroke="none"/>
+                      <circle cx="13" cy="8.2" r="0.9" fill="currentColor" stroke="none"/>
+                      <path d="M6.5 12c1.2 1.6 5.8 1.6 7 0" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="camera-toggle" title="Add photo/GIF">
+                    <svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4">
+                      <rect x="2" y="6.5" width="16" height="10.5" rx="2"/>
+                      <path d="M7 6.5l1.3-2h3.4l1.3 2" stroke-linejoin="round"/>
+                      <circle cx="10" cy="11.5" r="3"/>
+                    </svg>
+                  </button>
                 </div>
                 <div class="emoji-popup">
                   <button type="button" data-emoji="😀">😀</button>
@@ -438,6 +471,19 @@
           if(!error && data){
             setVote(id, { type, rowId: data.id });
           }
+        }
+        loadAll();
+      });
+    });
+    container.querySelectorAll('.comment-like-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const found = findCommentById(id);
+        if(!found) return;
+        if(found.likerIds.includes(session.user.id)){
+          await sb.from('comment_likes').delete().eq('comment_id', id).eq('user_id', session.user.id);
+        } else {
+          await sb.from('comment_likes').insert({ comment_id: id, user_id: session.user.id });
         }
         loadAll();
       });
