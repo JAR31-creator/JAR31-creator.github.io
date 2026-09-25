@@ -54,6 +54,17 @@
   .like-btn.liked{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   .comments{margin-top:8px;}
   .comment{padding:10px 0;border-top:1px solid var(--rule);font-size:0.88rem;}
+  .comment.reply{border-top:none;padding-top:6px;padding-bottom:0;border-left:2px solid var(--rule);margin-top:6px;}
+  .reply-btn{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;padding:0;margin-top:4px;text-decoration:underline;display:inline-block;}
+  .comment-actions{display:flex;gap:12px;margin-top:4px;}
+  .comment-actions button{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;padding:0;text-decoration:underline;}
+  .edit-form{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:420px;}
+  .edit-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;min-height:44px;}
+  .edit-form button[type="submit"]{background:var(--ink);color:var(--paper);}
+  .edit-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.8rem;border:none;border-radius:16px;padding:5px 12px;cursor:pointer;background:#eee;color:var(--ink);}
+  .reply-form{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:420px;}
+  .reply-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;min-height:44px;}
+  .reply-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.8rem;background:var(--ink);color:var(--paper);border:none;border-radius:16px;padding:5px 12px;cursor:pointer;}
   .comment .who{font-weight:600;margin-right:6px;}
   .comment-form{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-width:480px;}
   .comment-form input, .comment-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);}
@@ -259,6 +270,95 @@
     });
   }
 
+  function renderComment(c, allComments, reviewId, depth){
+    const replies = allComments.filter(x => x.parent_comment_id === c.id);
+    const indent = Math.min(depth, 3) * 18;
+    const isOwner = session && c.user_id === session.user.id;
+    return `
+      <div class="comment ${depth > 0 ? 'reply' : ''}" style="margin-left:${indent}px;">
+        <span class="who">${escapeHtml(c.author)}</span><span class="comment-text">${escapeHtml(c.body)}</span>
+        ${c.image_url ? `<img class="comment-img" src="${c.image_url}" alt="attached image">` : ''}
+        <div class="comment-actions">
+          ${session && profile ? `<button type="button" class="reply-btn" data-id="${c.id}" data-review="${reviewId}">Reply</button>` : ''}
+          ${isOwner ? `<button type="button" class="edit-btn" data-id="${c.id}">Edit</button>` : ''}
+          ${isOwner ? `<button type="button" class="delete-comment-btn" data-id="${c.id}">Delete</button>` : ''}
+        </div>
+        <div class="reply-form-container" data-parent="${c.id}"></div>
+        ${replies.map(r => renderComment(r, allComments, reviewId, depth + 1)).join('')}
+      </div>
+    `;
+  }
+
+  function findCommentById(id){
+    for(const r of ALL_REVIEWS){
+      const found = r.comments.find(c => c.id === id);
+      if(found) return found;
+    }
+    return null;
+  }
+
+  function toggleEditForm(commentId, currentBody, wrapper){
+    const existingForm = wrapper.querySelector('.edit-form');
+    if(existingForm){
+      existingForm.remove();
+      wrapper.querySelector('.comment-text').style.display = '';
+      return;
+    }
+    wrapper.querySelector('.comment-text').style.display = 'none';
+    const form = document.createElement('form');
+    form.className = 'edit-form';
+    const textarea = document.createElement('textarea');
+    textarea.value = currentBody;
+    textarea.maxLength = 500;
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'submit';
+    saveBtn.textContent = 'Save';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.textContent = 'Cancel';
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = '6px';
+    row.appendChild(saveBtn);
+    row.appendChild(cancelBtn);
+    form.appendChild(textarea);
+    form.appendChild(row);
+    cancelBtn.addEventListener('click', () => {
+      form.remove();
+      wrapper.querySelector('.comment-text').style.display = '';
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newBody = textarea.value.trim();
+      if(!newBody) return;
+      await sb.from('comments').update({ body: newBody }).eq('id', commentId);
+      loadAll();
+    });
+    wrapper.appendChild(form);
+  }
+
+  function toggleReplyForm(parentId, reviewId, container){
+    const existing = container.querySelector('.reply-form');
+    if(existing){ existing.remove(); return; }
+    const form = document.createElement('form');
+    form.className = 'reply-form';
+    form.innerHTML = `
+      <textarea placeholder="Write a reply…" maxlength="500"></textarea>
+      <button type="submit">Post reply</button>
+    `;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = form.querySelector('textarea').value.trim();
+      if(!body) return;
+      await sb.from('comments').insert({
+        review_id: reviewId, author: profile.display_name, user_id: session.user.id,
+        body, parent_comment_id: parentId
+      });
+      loadAll();
+    });
+    container.appendChild(form);
+  }
+
   function render(filter){
     const list = filter === 'all' ? ALL_REVIEWS : ALL_REVIEWS.filter(r => r.category === filter);
     const container = document.getElementById('entries');
@@ -282,7 +382,7 @@
           <button class="like-btn vote-btn ${getVote(r.id)?.type==='dislike'?'liked':''}" data-id="${r.id}" data-type="dislike">👎 ${r.dislikeCount}</button>
         </div>
         <div class="comments">
-          ${r.comments.map(c => `<div class="comment"><span class="who">${escapeHtml(c.author)}</span>${escapeHtml(c.body)}${c.image_url ? `<img class="comment-img" src="${c.image_url}" alt="attached image">` : ''}</div>`).join('')}
+          ${r.comments.filter(c => !c.parent_comment_id).map(c => renderComment(c, r.comments, r.id, 0)).join('')}
           ${session && profile ? `
             <form class="comment-form" data-id="${r.id}">
               <textarea name="body" placeholder="Add a comment…" maxlength="500"></textarea>
@@ -322,6 +422,26 @@
             setVote(id, { type, rowId: data.id });
           }
         }
+        loadAll();
+      });
+    });
+    container.querySelectorAll('.reply-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const wrapper = btn.parentElement.querySelector('.reply-form-container');
+        toggleReplyForm(btn.dataset.id, btn.dataset.review, wrapper);
+      });
+    });
+    container.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const found = findCommentById(btn.dataset.id);
+        const wrapper = btn.closest('.comment');
+        if(found) toggleEditForm(btn.dataset.id, found.body, wrapper);
+      });
+    });
+    container.querySelectorAll('.delete-comment-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Delete your comment?')) return;
+        await sb.from('comments').delete().eq('id', btn.dataset.id);
         loadAll();
       });
     });
