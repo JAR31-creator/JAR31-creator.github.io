@@ -22,14 +22,19 @@
 
 <div id="login">
   <h1>Log in</h1>
-  <input id="email" type="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <label style="font-size:0.8rem;display:flex;align-items:center;gap:4px;margin:-6px 0 12px;">
-    <input type="checkbox" onchange="document.getElementById('password').type = this.checked ? 'text' : 'password';"> Show password
-  </label>
-  <div id="turnstile-container" style="margin-bottom:12px;"></div>
-  <button onclick="login()">Log in</button>
-  <div id="login-status"></div>
+  <form id="login-form">
+    <input id="email" type="email" placeholder="Email" autocomplete="username">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" style="width:auto;flex:1;margin-bottom:0;">
+      <label style="font-size:0.8rem;display:flex;align-items:center;gap:4px;white-space:nowrap;">
+        <input type="checkbox" onchange="document.getElementById('password').type = this.checked ? 'text' : 'password';"> Show
+      </label>
+    </div>
+    <div id="turnstile-container" style="margin-bottom:12px;"></div>
+    <button type="submit">Log in</button>
+    <div id="login-status"></div>
+    <a href="#" onclick="forgotPassword(); return false;" style="font-size:0.85rem;display:inline-block;margin-top:10px;">Forgot password?</a>
+  </form>
 </div>
 
 <div id="app">
@@ -116,6 +121,21 @@
         loadManageList();
       });
     });
+  }
+
+  document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    login();
+  });
+
+  async function forgotPassword(){
+    const email = document.getElementById('email').value.trim();
+    const status = document.getElementById('login-status');
+    if(!email){ status.textContent = 'Enter your email above first, then click "Forgot password?" again.'; return; }
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    });
+    status.textContent = error ? error.message : 'Check your email for a password reset link.';
   }
 
   async function login(){
