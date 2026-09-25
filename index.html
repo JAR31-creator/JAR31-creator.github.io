@@ -297,8 +297,11 @@
     like: (filled) => `<svg viewBox="0 0 20 20" width="15" height="15" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4"><path d="M10 17s-6-3.6-6-8.2C4 6 6 4.5 8 4.5c1 0 2 .6 2 .6s1-.6 2-.6c2 0 4 1.5 4 4.3 0 4.6-6 8.2-6 8.2z"/></svg>`,
     reply: `<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 5L3 10l5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 10h9a4 4 0 0 1 4 4v1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     edit: `<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M13.5 3.5l3 3L6 17H3v-3z" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
-    delete: `<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6h12" stroke-linecap="round"/><path d="M8 6V4h4v2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 6l0.7 10a1 1 0 0 0 1 0.9h5.6a1 1 0 0 0 1-0.9L14.5 6" stroke-linejoin="round"/></svg>`
+    delete: `<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6h12" stroke-linecap="round"/><path d="M8 6V4h4v2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 6l0.7 10a1 1 0 0 0 1 0.9h5.6a1 1 0 0 0 1-0.9L14.5 6" stroke-linejoin="round"/></svg>`,
+    smile: `<svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="10" cy="10" r="8"/><circle cx="7" cy="8.2" r="0.9" fill="currentColor" stroke="none"/><circle cx="13" cy="8.2" r="0.9" fill="currentColor" stroke="none"/><path d="M6.5 12c1.2 1.6 5.8 1.6 7 0" stroke-linecap="round"/></svg>`,
+    camera: `<svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="6.5" width="16" height="10.5" rx="2"/><path d="M7 6.5l1.3-2h3.4l1.3 2" stroke-linejoin="round"/><circle cx="10" cy="11.5" r="3"/></svg>`
   };
+  const EMOJI_PICKS = ['😀','😂','😍','👍','🔥','😢'];
 
   function renderComment(c, allComments, reviewId, depth){
     const replies = allComments.filter(x => x.parent_comment_id === c.id);
@@ -375,16 +378,62 @@
     const form = document.createElement('form');
     form.className = 'reply-form';
     form.innerHTML = `
-      <textarea placeholder="Write a reply…" maxlength="500"></textarea>
+      <div class="comment-input-wrap">
+        <textarea placeholder="Write a reply…" maxlength="500"></textarea>
+        <div class="comment-toolbar">
+          <button type="button" class="emoji-toggle" title="Add emoji">${ICONS.smile}</button>
+          <button type="button" class="camera-toggle" title="Add photo/GIF">${ICONS.camera}</button>
+        </div>
+        <div class="emoji-popup">
+          ${EMOJI_PICKS.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('')}
+        </div>
+        <input class="comment-file" type="file" accept="image/*,.gif" style="display:none;">
+      </div>
+      <div class="file-indicator"></div>
       <button type="submit">Post reply</button>
     `;
+
+    const textarea = form.querySelector('textarea');
+    const emojiToggle = form.querySelector('.emoji-toggle');
+    const emojiPopup = form.querySelector('.emoji-popup');
+    const cameraToggle = form.querySelector('.camera-toggle');
+    const fileInput = form.querySelector('.comment-file');
+    const fileIndicator = form.querySelector('.file-indicator');
+
+    emojiToggle.addEventListener('click', () => emojiPopup.classList.toggle('open'));
+    emojiPopup.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        textarea.value += btn.dataset.emoji;
+        textarea.focus();
+        emojiPopup.classList.remove('open');
+      });
+    });
+    cameraToggle.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      fileIndicator.textContent = fileInput.files[0] ? '📎 ' + fileInput.files[0].name : '';
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const body = form.querySelector('textarea').value.trim();
-      if(!body) return;
+      const body = textarea.value.trim();
+      const imageFile = fileInput.files[0];
+      if(!body && !imageFile) return;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      let image_url = null;
+      if(imageFile){
+        submitBtn.textContent = 'Uploading…';
+        const path = crypto.randomUUID() + '-' + imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        const { error: uploadError } = await sb.storage.from('comment-images').upload(path, imageFile);
+        if(uploadError){
+          alert('Image upload failed: ' + uploadError.message);
+          submitBtn.textContent = 'Post reply';
+          return;
+        }
+        image_url = sb.storage.from('comment-images').getPublicUrl(path).data.publicUrl;
+      }
       await sb.from('comments').insert({
         review_id: reviewId, author: profile.display_name, user_id: session.user.id,
-        body, parent_comment_id: parentId
+        body, parent_comment_id: parentId, image_url
       });
       loadAll();
     });
