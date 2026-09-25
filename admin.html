@@ -33,6 +33,7 @@
 </div>
 
 <div id="app">
+  <button onclick="logout()" style="float:right;background:#eee;color:#1C1B19;border:1px solid #ccc;border-radius:4px;">Log out</button>
   <h1>Add a review</h1>
   <input id="title" placeholder="Title (e.g. Past Lives)">
   <input id="subject" placeholder="Subject line (e.g. Directed by Celine Song, 2023)">
@@ -86,6 +87,15 @@
       document.getElementById('app').style.display = 'block';
       loadManageList();
     }
+  }
+
+  async function logout(){
+    await sb.auth.signOut();
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'block';
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('login-status').textContent = '';
   }
 
   async function loadManageList(){
