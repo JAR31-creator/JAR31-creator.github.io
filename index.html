@@ -70,10 +70,18 @@
   .comment-form input, .comment-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);}
   .comment-form textarea{min-height:60px;resize:vertical;}
   .comment-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:20px;padding:7px 16px;cursor:pointer;}
-  .comment .comment-img{float:none;display:block;width:auto;height:auto;max-width:160px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:4px;margin:8px 0 10px;background:#fff;}
-  .emoji-row{display:flex;gap:4px;}
-  .emoji-row button{background:none;border:1px solid var(--rule);border-radius:4px;font-size:1rem;padding:2px 6px;cursor:pointer;}
-  .comment-file{font-size:0.78rem;}
+  .comment .comment-img{float:none;display:block;width:auto;height:auto;max-width:220px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:4px;margin:8px 0 10px;background:#fff;cursor:pointer;}
+  .comment-input-wrap{position:relative;}
+  .comment-input-wrap textarea{width:100%;box-sizing:border-box;padding-bottom:34px;}
+  .comment-toolbar{position:absolute;bottom:8px;right:8px;display:flex;gap:8px;}
+  .comment-toolbar button{background:none;border:none;font-size:1.15rem;cursor:pointer;padding:0;line-height:1;}
+  .emoji-popup{position:absolute;bottom:38px;right:8px;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:6px;display:none;gap:4px;box-shadow:0 4px 10px rgba(28,27,25,0.12);z-index:5;}
+  .emoji-popup.open{display:flex;}
+  .emoji-popup button{background:none;border:none;font-size:1.1rem;cursor:pointer;padding:2px 4px;}
+  .file-indicator{font-size:0.75rem;color:var(--ink-soft);margin-top:4px;}
+  #lightbox{display:none;position:fixed;inset:0;background:rgba(20,19,17,0.88);z-index:1000;align-items:center;justify-content:center;cursor:zoom-out;}
+  #lightbox.open{display:flex;}
+  #lightbox img{max-width:90%;max-height:90%;border-radius:4px;}
   .empty-state, .loading{padding:60px 0;color:var(--ink-soft);font-style:italic;}
   footer{max-width:680px;margin:0 auto;padding:0 24px 60px;color:var(--ink-soft);font-size:0.8rem;}
   #authbar{max-width:680px;margin:0 auto;padding:14px 24px;font-size:0.85rem;background:#F1EDE3;}
@@ -95,6 +103,8 @@
 <div id="authbar"></div>
 <main id="entries"><div class="loading">Loading reviews…</div></main>
 <footer>Updated by hand. New entries go straight into the source.</footer>
+
+<div id="lightbox"><img id="lightbox-img" src="" alt="Full size image"></div>
 
 <script>
   // ---- Fill these in from Project Settings -> API ----
@@ -385,16 +395,23 @@
           ${r.comments.filter(c => !c.parent_comment_id).map(c => renderComment(c, r.comments, r.id, 0)).join('')}
           ${session && profile ? `
             <form class="comment-form" data-id="${r.id}">
-              <textarea name="body" placeholder="Add a comment…" maxlength="500"></textarea>
-              <div class="emoji-row">
-                <button type="button" data-emoji="😀">😀</button>
-                <button type="button" data-emoji="😂">😂</button>
-                <button type="button" data-emoji="😍">😍</button>
-                <button type="button" data-emoji="👍">👍</button>
-                <button type="button" data-emoji="🔥">🔥</button>
-                <button type="button" data-emoji="😢">😢</button>
+              <div class="comment-input-wrap">
+                <textarea name="body" placeholder="Add a comment…" maxlength="500"></textarea>
+                <div class="comment-toolbar">
+                  <button type="button" class="emoji-toggle" title="Add emoji">😊</button>
+                  <button type="button" class="camera-toggle" title="Add photo/GIF">📷</button>
+                </div>
+                <div class="emoji-popup">
+                  <button type="button" data-emoji="😀">😀</button>
+                  <button type="button" data-emoji="😂">😂</button>
+                  <button type="button" data-emoji="😍">😍</button>
+                  <button type="button" data-emoji="👍">👍</button>
+                  <button type="button" data-emoji="🔥">🔥</button>
+                  <button type="button" data-emoji="😢">😢</button>
+                </div>
+                <input class="comment-file" type="file" name="image" accept="image/*,.gif" style="display:none;">
               </div>
-              <input class="comment-file" type="file" name="image" accept="image/*,.gif">
+              <div class="file-indicator"></div>
               <button type="submit">Post comment</button>
             </form>
           ` : `<p style="font-size:0.82rem;color:var(--ink-soft);margin-top:10px;">Log in above to add a comment.</p>`}
@@ -446,12 +463,27 @@
       });
     });
     container.querySelectorAll('.comment-form').forEach(form => {
-      form.querySelectorAll('.emoji-row button').forEach(btn => {
+      const emojiToggle = form.querySelector('.emoji-toggle');
+      const emojiPopup = form.querySelector('.emoji-popup');
+      const cameraToggle = form.querySelector('.camera-toggle');
+      const fileInput = form.querySelector('.comment-file');
+      const fileIndicator = form.querySelector('.file-indicator');
+
+      emojiToggle.addEventListener('click', () => {
+        emojiPopup.classList.toggle('open');
+      });
+      emojiPopup.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
           form.body.value += btn.dataset.emoji;
           form.body.focus();
+          emojiPopup.classList.remove('open');
         });
       });
+      cameraToggle.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        fileIndicator.textContent = fileInput.files[0] ? '📎 ' + fileInput.files[0].name : '';
+      });
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = form.dataset.id;
@@ -475,6 +507,15 @@
         loadAll();
       });
     });
+
+    container.querySelectorAll('.comment-img').forEach(img => {
+      img.addEventListener('click', () => openLightbox(img.src));
+    });
+  }
+
+  function openLightbox(src){
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
   }
 
   function escapeHtml(str){
@@ -482,6 +523,10 @@
     d.textContent = str;
     return d.innerHTML;
   }
+
+  document.getElementById('lightbox').addEventListener('click', () => {
+    document.getElementById('lightbox').classList.remove('open');
+  });
 
   initAuth();
   loadAll();
