@@ -33,6 +33,7 @@
   .actions{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
   .like-btn{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:1px solid var(--rule);border-radius:20px;padding:5px 14px;cursor:pointer;color:var(--ink);}
   .like-btn.liked{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .like-btn:disabled{opacity:0.5;cursor:not-allowed;}
   .comments{margin-top:8px;}
   .comment{padding:10px 0;border-top:1px solid var(--rule);font-size:0.88rem;}
   .comment .who{font-weight:600;margin-right:6px;}
@@ -42,6 +43,12 @@
   .comment-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:20px;padding:7px 16px;cursor:pointer;}
   .empty-state, .loading{padding:60px 0;color:var(--ink-soft);font-style:italic;}
   footer{max-width:680px;margin:0 auto;padding:0 24px 60px;color:var(--ink-soft);font-size:0.8rem;}
+  #authbar{max-width:680px;margin:0 auto;padding:14px 24px;font-size:0.85rem;background:#F1EDE3;}
+  #authbar button{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:none;text-decoration:underline;cursor:pointer;color:var(--ink);padding:0;}
+  #auth-forms{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  #auth-forms input{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;}
+  #auth-forms button{background:var(--ink);color:var(--paper);border-radius:20px;padding:6px 14px;text-decoration:none;}
+  #auth-status{width:100%;font-size:0.8rem;color:var(--game);}
 </style>
 </head>
 <body>
@@ -52,6 +59,7 @@
 </header>
 
 <nav id="filters"></nav>
+<div id="authbar"></div>
 <main id="entries"><div class="loading">Loading reviews…</div></main>
 <footer>Updated by hand. New entries go straight into the source.</footer>
 
@@ -74,18 +82,89 @@
   function formatDate(d){
     return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   }
-  function hasLiked(id){ return localStorage.getItem('liked-' + id) === '1'; }
-  function markLiked(id){ localStorage.setItem('liked-' + id, '1'); }
+  function votedAs(id){ return localStorage.getItem('voted-' + id); } // 'like', 'dislike', or null
+  function markVoted(id, type){ localStorage.setItem('voted-' + id, type); }
+
+  let session = null;
+  let profile = null;
+
+  async function initAuth(){
+    const { data } = await sb.auth.getSession();
+    session = data.session;
+    if(session){
+      const { data: p } = await sb.from('profiles').select('display_name').eq('id', session.user.id).single();
+      profile = p;
+    }
+    renderAuthBar();
+  }
+
+  function renderAuthBar(){
+    const bar = document.getElementById('authbar');
+    if(session && profile){
+      bar.innerHTML = `Commenting as <strong>${escapeHtml(profile.display_name)}</strong> · <button id="logout-btn">Log out</button>`;
+      document.getElementById('logout-btn').onclick = async () => {
+        await sb.auth.signOut();
+        session = null; profile = null;
+        renderAuthBar(); render(currentFilter);
+      };
+    } else {
+      bar.innerHTML = `
+        <span>Want to comment? <button id="show-login">Log in</button> or <button id="show-signup">Sign up</button></span>
+        <div id="auth-forms" style="display:none;"></div>
+      `;
+      document.getElementById('show-login').onclick = () => showAuthForm('login');
+      document.getElementById('show-signup').onclick = () => showAuthForm('signup');
+    }
+  }
+
+  function showAuthForm(mode){
+    const forms = document.getElementById('auth-forms');
+    forms.style.display = 'flex';
+    forms.innerHTML = (mode === 'signup' ? `<input id="auth-name" placeholder="Your name">` : '')
+      + `<input id="auth-email" type="email" placeholder="Email">
+         <input id="auth-password" type="password" placeholder="Password">
+         <button id="auth-submit">${mode === 'signup' ? 'Sign up' : 'Log in'}</button>
+         <div id="auth-status"></div>`;
+    document.getElementById('auth-submit').onclick = () => mode === 'signup' ? doSignup() : doLogin();
+  }
+
+  async function doSignup(){
+    const name = document.getElementById('auth-name').value.trim();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const status = document.getElementById('auth-status');
+    if(!name || !email || !password){ status.textContent = 'All fields required.'; return; }
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if(error){ status.textContent = error.message; return; }
+    if(!data.session){ status.textContent = 'Check your email to confirm your account, then log in.'; return; }
+    await sb.from('profiles').insert({ id: data.user.id, display_name: name });
+    session = data.session;
+    profile = { display_name: name };
+    renderAuthBar(); render(currentFilter);
+  }
+
+  async function doLogin(){
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const status = document.getElementById('auth-status');
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ status.textContent = error.message; return; }
+    session = data.session;
+    const { data: p } = await sb.from('profiles').select('display_name').eq('id', session.user.id).single();
+    profile = p;
+    renderAuthBar(); render(currentFilter);
+  }
 
   async function loadAll(){
     const { data: reviews } = await sb.from('reviews').select('*').order('created_at', {ascending:false});
     const { data: comments } = await sb.from('comments').select('*').order('created_at', {ascending:true});
-    const { data: likes } = await sb.from('likes').select('review_id');
+    const { data: likes } = await sb.from('likes').select('review_id, type');
 
     ALL_REVIEWS = (reviews || []).map(r => ({
       ...r,
       comments: (comments || []).filter(c => c.review_id === r.id),
-      likeCount: (likes || []).filter(l => l.review_id === r.id).length
+      likeCount: (likes || []).filter(l => l.review_id === r.id && l.type === 'like').length,
+      dislikeCount: (likes || []).filter(l => l.review_id === r.id && l.type === 'dislike').length
     }));
 
     renderFilters();
@@ -121,25 +200,28 @@
         <div class="stars">${stars(r.rating)}</div>
         <p class="body">${r.body}</p>
         <div class="actions">
-          <button class="like-btn ${hasLiked(r.id)?'liked':''}" data-id="${r.id}">♥ ${r.likeCount} like${r.likeCount===1?'':'s'}</button>
+          <button class="like-btn vote-btn ${votedAs(r.id)==='like'?'liked':''}" data-id="${r.id}" data-type="like" ${votedAs(r.id)==='dislike'?'disabled':''}>♥ ${r.likeCount}</button>
+          <button class="like-btn vote-btn ${votedAs(r.id)==='dislike'?'liked':''}" data-id="${r.id}" data-type="dislike" ${votedAs(r.id)==='like'?'disabled':''}>👎 ${r.dislikeCount}</button>
         </div>
         <div class="comments">
           ${r.comments.map(c => `<div class="comment"><span class="who">${escapeHtml(c.author)}</span>${escapeHtml(c.body)}</div>`).join('')}
-          <form class="comment-form" data-id="${r.id}">
-            <input type="text" name="author" placeholder="Your name" required maxlength="40">
-            <textarea name="body" placeholder="Add a comment…" required maxlength="500"></textarea>
-            <button type="submit">Post comment</button>
-          </form>
+          ${session && profile ? `
+            <form class="comment-form" data-id="${r.id}">
+              <textarea name="body" placeholder="Add a comment…" required maxlength="500"></textarea>
+              <button type="submit">Post comment</button>
+            </form>
+          ` : `<p style="font-size:0.82rem;color:var(--ink-soft);margin-top:10px;">Log in above to add a comment.</p>`}
         </div>
       </article>
     `).join('');
 
-    container.querySelectorAll('.like-btn').forEach(btn => {
+    container.querySelectorAll('.vote-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        if(hasLiked(id)) return;
-        await sb.from('likes').insert({ review_id: id });
-        markLiked(id);
+        const type = btn.dataset.type;
+        if(votedAs(id)) return;
+        await sb.from('likes').insert({ review_id: id, type });
+        markVoted(id, type);
         loadAll();
       });
     });
@@ -147,10 +229,9 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = form.dataset.id;
-        const author = form.author.value.trim();
         const body = form.body.value.trim();
-        if(!author || !body) return;
-        await sb.from('comments').insert({ review_id: id, author, body });
+        if(!body) return;
+        await sb.from('comments').insert({ review_id: id, author: profile.display_name, user_id: session.user.id, body });
         loadAll();
       });
     });
@@ -162,6 +243,7 @@
     return d.innerHTML;
   }
 
+  initAuth();
   loadAll();
 </script>
 

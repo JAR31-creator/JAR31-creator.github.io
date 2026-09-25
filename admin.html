@@ -13,6 +13,8 @@
   button{padding:8px 16px;cursor:pointer;}
   #status{margin-top:10px;font-size:0.9rem;}
   #app{display:none;}
+  .manage-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;}
+  .manage-row button{background:#b3452f;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:0.8rem;}
 </style>
 </head>
 <body>
@@ -44,6 +46,9 @@
   <textarea id="body" placeholder="Your review"></textarea>
   <button onclick="submitReview()">Publish review</button>
   <div id="status"></div>
+
+  <h1 style="margin-top:40px;">Manage reviews</h1>
+  <div id="manage-list">Loading…</div>
 </div>
 
 <script>
@@ -56,7 +61,28 @@
     if(data.session){
       document.getElementById('login').style.display = 'none';
       document.getElementById('app').style.display = 'block';
+      loadManageList();
     }
+  }
+
+  async function loadManageList(){
+    const list = document.getElementById('manage-list');
+    const { data, error } = await sb.from('reviews').select('*').order('created_at', {ascending:false});
+    if(error){ list.textContent = 'Error loading reviews.'; return; }
+    if(!data.length){ list.textContent = 'No reviews yet.'; return; }
+    list.innerHTML = data.map(r => `
+      <div class="manage-row">
+        <span>${r.title} <em>(${r.category})</em></span>
+        <button data-id="${r.id}">Delete</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Delete "' + btn.parentElement.querySelector('span').textContent.trim() + '"? This also removes its comments and likes.')) return;
+        await sb.from('reviews').delete().eq('id', btn.dataset.id);
+        loadManageList();
+      });
+    });
   }
 
   async function login(){
@@ -90,6 +116,7 @@
       document.getElementById('title').value = '';
       document.getElementById('subject').value = '';
       document.getElementById('body').value = '';
+      loadManageList();
     }
   }
 
