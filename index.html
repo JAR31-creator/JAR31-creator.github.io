@@ -138,6 +138,9 @@
     forms.innerHTML = (mode === 'signup' ? `<input id="auth-name" placeholder="Your name">` : '')
       + `<input id="auth-email" type="email" placeholder="Email">
          <input id="auth-password" type="password" placeholder="Password">
+         <label style="font-size:0.75rem;display:flex;align-items:center;gap:4px;">
+           <input type="checkbox" onchange="document.getElementById('auth-password').type = this.checked ? 'text' : 'password';"> Show
+         </label>
          ${mode === 'signup' ? `<div id="turnstile-signup-container"></div>` : ''}
          <button id="auth-submit">${mode === 'signup' ? 'Sign up' : 'Log in'}</button>
          <div id="auth-status"></div>`;
