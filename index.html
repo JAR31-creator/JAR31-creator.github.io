@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Ledger — Reviews</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF8F4;
+    --ink:#1C1B19;
+    --ink-soft:#5A5751;
+    --rule:#DEDACF;
+    --film:#2F6F6E;
+    --game:#B3452F;
+    --music:#6B4E8E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+  }
+  header{
+    max-width:680px;
+    margin:0 auto;
+    padding:56px 24px 24px;
+  }
+  h1{
+    font-family:'Newsreader',serif;
+    font-weight:600;
+    font-size:2.4rem;
+    margin:0 0 6px;
+  }
+  header p{
+    color:var(--ink-soft);
+    margin:0;
+    font-size:0.95rem;
+  }
+  nav{
+    max-width:680px;
+    margin:0 auto;
+    padding:0 24px 32px;
+    display:flex;
+    gap:18px;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:16px;
+  }
+  nav button{
+    font-family:'Inter',sans-serif;
+    font-size:0.9rem;
+    font-weight:500;
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    cursor:pointer;
+    padding:4px 0;
+    border-bottom:2px solid transparent;
+  }
+  nav button.active{
+    color:var(--ink);
+    border-bottom-color:var(--ink);
+  }
+  main{
+    max-width:680px;
+    margin:0 auto;
+    padding:8px 24px 80px;
+  }
+  .entry{
+    padding:32px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .entry:last-child{ border-bottom:none; }
+  .entry-meta{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+  }
+  .tag{
+    font-size:0.72rem;
+    font-weight:600;
+    padding:2px 8px;
+    border-radius:2px;
+    color:#fff;
+  }
+  .tag.film{ background:var(--film); }
+  .tag.game{ background:var(--game); }
+  .tag.music{ background:var(--music); }
+  .entry h2{
+    font-family:'Newsreader',serif;
+    font-weight:600;
+    font-style:italic;
+    font-size:1.5rem;
+    margin:0 0 4px;
+  }
+  .subject{
+    font-size:0.88rem;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .stars{
+    letter-spacing:2px;
+    margin-bottom:10px;
+    color:var(--ink);
+  }
+  .stars .empty{ color:var(--rule); }
+  .entry p.body{
+    margin:0;
+    max-width:62ch;
+  }
+  footer{
+    max-width:680px;
+    margin:0 auto;
+    padding:0 24px 60px;
+    color:var(--ink-soft);
+    font-size:0.8rem;
+  }
+  .empty-state{
+    padding:60px 0;
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The Ledger</h1>
+  <p>One person's honest notes on films, games, and records.</p>
+</header>
+
+<nav id="filters"></nav>
+
+<main id="entries"></main>
+
+<footer>Updated by hand. New entries go straight into the source.</footer>
+
+<script>
+  // ---------------------------------------------------------------
+  // ADD NEW REVIEWS HERE. Copy an object below, change the values.
+  // category must be exactly: "film", "game", or "music"
+  // rating is a number from 1 to 5
+  // ---------------------------------------------------------------
+  const REVIEWS = [
+    {
+      title: "Past Lives",
+      subject: "Directed by Celine Song, 2023",
+      category: "film",
+      rating: 5,
+      date: "2026-09-10",
+      body: "Quiet in a way that trusts the audience. The long silences do more work than dialogue could, and the ending earns every bit of its ache."
+    },
+    {
+      title: "Baldur's Gate 3",
+      subject: "Larian Studios, 2023",
+      category: "game",
+      rating: 5,
+      date: "2026-08-22",
+      body: "The rare game where the systems and the writing are pulling in the same direction. I stopped optimizing my build and started just making choices I'd actually make."
+    },
+    {
+      title: "The Record",
+      subject: "boygenius, 2023",
+      category: "music",
+      rating: 4,
+      date: "2026-08-02",
+      body: "Best when the three voices actually fight each other instead of blending. A couple of tracks coast, but 'Cool About It' alone justifies the album."
+    },
+    {
+      title: "Dune: Part Two",
+      subject: "Directed by Denis Villeneuve, 2024",
+      category: "film",
+      rating: 4,
+      date: "2026-07-14",
+      body: "Bigger and colder than Part One, which is the point. Loses a little of the intimacy but gains something closer to myth."
+    }
+  ];
+
+  const CATS = { film: "Film", game: "Game", music: "Music" };
+
+  function stars(n){
+    let s = "";
+    for(let i=0;i<5;i++) s += i < n ? "★" : "<span class='empty'>★</span>";
+    return s;
+  }
+
+  function formatDate(d){
+    return new Date(d + "T00:00:00").toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  }
+
+  function render(filter){
+    const list = filter === 'all' ? REVIEWS : REVIEWS.filter(r => r.category === filter);
+    const sorted = [...list].sort((a,b) => new Date(b.date) - new Date(a.date));
+    const container = document.getElementById('entries');
+    if(sorted.length === 0){
+      container.innerHTML = "<div class='empty-state'>No entries in this category yet.</div>";
+      return;
+    }
+    container.innerHTML = sorted.map(r => `
+      <article class="entry">
+        <div class="entry-meta">
+          <span class="tag ${r.category}">${CATS[r.category]}</span>
+          <span>${formatDate(r.date)}</span>
+        </div>
+        <h2>${r.title}</h2>
+        <div class="subject">${r.subject}</div>
+        <div class="stars">${stars(r.rating)}</div>
+        <p class="body">${r.body}</p>
+      </article>
+    `).join('');
+  }
+
+  function renderFilters(){
+    const cats = ['all', ...new Set(REVIEWS.map(r => r.category))];
+    const nav = document.getElementById('filters');
+    nav.innerHTML = cats.map(c =>
+      `<button data-cat="${c}" class="${c==='all' ? 'active' : ''}">${c === 'all' ? 'All' : CATS[c]}</button>`
+    ).join('');
+    nav.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        nav.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render(btn.dataset.cat);
+      });
+    });
+  }
+
+  renderFilters();
+  render('all');
+</script>
+
+</body>
+</html>
