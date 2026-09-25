@@ -28,7 +28,9 @@
   .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);}
   .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.5rem;margin:0 0 4px;}
   .subject{font-size:0.88rem;color:var(--ink-soft);margin-bottom:10px;}
-  .stars{letter-spacing:2px;margin-bottom:10px;} .stars .empty{color:var(--rule);}
+  .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;margin-bottom:10px;line-height:1;}
+  .stars .stars-back{color:var(--rule);}
+  .stars .stars-front{color:var(--ink);position:absolute;top:0;left:0;overflow:hidden;white-space:nowrap;}
   .entry p.body{margin:0 0 16px;max-width:62ch;}
   .actions{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
   .like-btn{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:1px solid var(--rule);border-radius:20px;padding:5px 14px;cursor:pointer;color:var(--ink);}
@@ -75,9 +77,8 @@
   let currentFilter = 'all';
 
   function stars(n){
-    let s = "";
-    for(let i=0;i<5;i++) s += i < n ? "★" : "<span class='empty'>★</span>";
-    return s;
+    const pct = Math.max(0, Math.min(100, (n / 5) * 100));
+    return `<span class="stars-back">★★★★★</span><span class="stars-front" style="width:${pct}%">★★★★★</span>`;
   }
   function formatDate(d){
     return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
@@ -200,7 +201,7 @@
         <div class="stars">${stars(r.rating)}</div>
         <p class="body">${r.body}</p>
         <div class="actions">
-          <button class="like-btn vote-btn ${votedAs(r.id)==='like'?'liked':''}" data-id="${r.id}" data-type="like" ${votedAs(r.id)==='dislike'?'disabled':''}>♥ ${r.likeCount}</button>
+          <button class="like-btn vote-btn ${votedAs(r.id)==='like'?'liked':''}" data-id="${r.id}" data-type="like" ${votedAs(r.id)==='dislike'?'disabled':''}>❤️ ${r.likeCount}</button>
           <button class="like-btn vote-btn ${votedAs(r.id)==='dislike'?'liked':''}" data-id="${r.id}" data-type="dislike" ${votedAs(r.id)==='like'?'disabled':''}>👎 ${r.dislikeCount}</button>
         </div>
         <div class="comments">
