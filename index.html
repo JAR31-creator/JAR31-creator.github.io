@@ -155,7 +155,7 @@
              <input type="checkbox" onchange="document.getElementById('auth-password').type = this.checked ? 'text' : 'password';"> Show
            </label>
          </div>
-         ${mode === 'signup' ? `<div id="turnstile-signup-container"></div>` : ''}
+         <div id="turnstile-auth-container"></div>
          <button id="auth-submit" type="submit">${mode === 'signup' ? 'Sign up' : 'Log in'}</button>
          ${mode === 'login' ? `<a href="#" onclick="forgotPassword(); return false;" style="font-size:0.8rem;">Forgot password?</a>` : ''}
          <div id="auth-status" style="width:100%;"></div>
@@ -164,8 +164,8 @@
       e.preventDefault();
       mode === 'signup' ? doSignup() : doLogin();
     });
-    if(mode === 'signup' && window.turnstile){
-      turnstileWidgetId = turnstile.render('#turnstile-signup-container', {
+    if(window.turnstile){
+      turnstileWidgetId = turnstile.render('#turnstile-auth-container', {
         sitekey: TURNSTILE_SITE_KEY,
         callback: (token) => { turnstileToken = token; }
       });
@@ -176,9 +176,13 @@
     const email = document.getElementById('auth-email').value.trim();
     const status = document.getElementById('auth-status');
     if(!email){ status.textContent = 'Enter your email above first, then click "Forgot password?" again.'; return; }
+    if(!turnstileToken){ status.textContent = 'Please complete the verification check above first.'; return; }
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/reset-password.html'
+      redirectTo: window.location.origin + '/reset-password.html',
+      captchaToken: turnstileToken
     });
+    if(turnstileWidgetId !== null && window.turnstile) turnstile.reset(turnstileWidgetId);
+    turnstileToken = null;
     status.textContent = error ? error.message : 'Check your email for a password reset link.';
   }
 
@@ -210,7 +214,13 @@
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
     const status = document.getElementById('auth-status');
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(!turnstileToken){ status.textContent = 'Please complete the verification check.'; return; }
+    const { data, error } = await sb.auth.signInWithPassword({
+      email, password,
+      options: { captchaToken: turnstileToken }
+    });
+    if(turnstileWidgetId !== null && window.turnstile) turnstile.reset(turnstileWidgetId);
+    turnstileToken = null;
     if(error){ status.textContent = error.message; return; }
     session = data.session;
     const { data: p } = await sb.from('profiles').select('display_name').eq('id', session.user.id).single();
