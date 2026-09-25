@@ -59,6 +59,10 @@
   .comment-form input, .comment-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);}
   .comment-form textarea{min-height:60px;resize:vertical;}
   .comment-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:20px;padding:7px 16px;cursor:pointer;}
+  .comment-img{display:block;max-width:160px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:4px;margin-top:8px;background:#fff;}
+  .emoji-row{display:flex;gap:4px;}
+  .emoji-row button{background:none;border:1px solid var(--rule);border-radius:4px;font-size:1rem;padding:2px 6px;cursor:pointer;}
+  .comment-file{font-size:0.78rem;}
   .empty-state, .loading{padding:60px 0;color:var(--ink-soft);font-style:italic;}
   footer{max-width:680px;margin:0 auto;padding:0 24px 60px;color:var(--ink-soft);font-size:0.8rem;}
   #authbar{max-width:680px;margin:0 auto;padding:14px 24px;font-size:0.85rem;background:#F1EDE3;}
@@ -278,10 +282,19 @@
           <button class="like-btn vote-btn ${getVote(r.id)?.type==='dislike'?'liked':''}" data-id="${r.id}" data-type="dislike">👎 ${r.dislikeCount}</button>
         </div>
         <div class="comments">
-          ${r.comments.map(c => `<div class="comment"><span class="who">${escapeHtml(c.author)}</span>${escapeHtml(c.body)}</div>`).join('')}
+          ${r.comments.map(c => `<div class="comment"><span class="who">${escapeHtml(c.author)}</span>${escapeHtml(c.body)}${c.image_url ? `<img class="comment-img" src="${c.image_url}" alt="attached image">` : ''}</div>`).join('')}
           ${session && profile ? `
             <form class="comment-form" data-id="${r.id}">
-              <textarea name="body" placeholder="Add a comment…" required maxlength="500"></textarea>
+              <textarea name="body" placeholder="Add a comment…" maxlength="500"></textarea>
+              <div class="emoji-row">
+                <button type="button" data-emoji="😀">😀</button>
+                <button type="button" data-emoji="😂">😂</button>
+                <button type="button" data-emoji="😍">😍</button>
+                <button type="button" data-emoji="👍">👍</button>
+                <button type="button" data-emoji="🔥">🔥</button>
+                <button type="button" data-emoji="😢">😢</button>
+              </div>
+              <input class="comment-file" type="file" name="image" accept="image/*,.gif">
               <button type="submit">Post comment</button>
             </form>
           ` : `<p style="font-size:0.82rem;color:var(--ink-soft);margin-top:10px;">Log in above to add a comment.</p>`}
@@ -313,12 +326,32 @@
       });
     });
     container.querySelectorAll('.comment-form').forEach(form => {
+      form.querySelectorAll('.emoji-row button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          form.body.value += btn.dataset.emoji;
+          form.body.focus();
+        });
+      });
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = form.dataset.id;
         const body = form.body.value.trim();
-        if(!body) return;
-        await sb.from('comments').insert({ review_id: id, author: profile.display_name, user_id: session.user.id, body });
+        const imageFile = form.image.files[0];
+        if(!body && !imageFile) return;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        let image_url = null;
+        if(imageFile){
+          submitBtn.textContent = 'Uploading…';
+          const path = crypto.randomUUID() + '-' + imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+          const { error: uploadError } = await sb.storage.from('comment-images').upload(path, imageFile);
+          if(uploadError){
+            alert('Image upload failed: ' + uploadError.message);
+            submitBtn.textContent = 'Post comment';
+            return;
+          }
+          image_url = sb.storage.from('comment-images').getPublicUrl(path).data.publicUrl;
+        }
+        await sb.from('comments').insert({ review_id: id, author: profile.display_name, user_id: session.user.id, body, image_url });
         loadAll();
       });
     });

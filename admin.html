@@ -67,6 +67,9 @@
 
   <h1 style="margin-top:40px;">Manage reviews</h1>
   <div id="manage-list">Loading…</div>
+
+  <h1 style="margin-top:40px;">Manage comments</h1>
+  <div id="comments-list" style="max-height:340px;overflow-y:auto;">Loading…</div>
 </div>
 
 <script>
@@ -91,6 +94,7 @@
       document.getElementById('login').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       loadManageList();
+      loadCommentsList();
     }
   }
 
@@ -119,6 +123,40 @@
         if(!confirm('Delete "' + btn.parentElement.querySelector('span').textContent.trim() + '"? This also removes its comments and likes.')) return;
         await sb.from('reviews').delete().eq('id', btn.dataset.id);
         loadManageList();
+        loadCommentsList();
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  async function loadCommentsList(){
+    const list = document.getElementById('comments-list');
+    const { data, error } = await sb.from('comments')
+      .select('id, author, body, image_url, created_at, reviews(title)')
+      .order('created_at', {ascending:false});
+    if(error){ list.textContent = 'Error loading comments.'; return; }
+    if(!data.length){ list.textContent = 'No comments yet.'; return; }
+    list.innerHTML = data.map(c => `
+      <div class="manage-row">
+        <span>
+          <em>${escapeHtml(c.reviews ? c.reviews.title : 'Unknown review')}</em> —
+          <strong>${escapeHtml(c.author)}</strong>:
+          ${escapeHtml(c.body) || '(image only)'}
+          ${c.image_url ? ' 📷' : ''}
+        </span>
+        <button data-id="${c.id}">Delete</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Delete this comment?')) return;
+        await sb.from('comments').delete().eq('id', btn.dataset.id);
+        loadCommentsList();
       });
     });
   }
