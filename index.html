@@ -7,10 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
     --paper:#FAF8F4; --ink:#1C1B19; --ink-soft:#5A5751; --rule:#DEDACF;
-    --film:#2F6F6E; --game:#B3452F; --music:#6B4E8E;
+    --film:#2F6F6E; --game:#B3452F; --music:#6B4E8E; --tv:#B08B1E;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
@@ -25,8 +26,9 @@
   .entry:last-child{border-bottom:none;}
   .entry-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:0.8rem;color:var(--ink-soft);}
   .tag{font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:2px;color:#fff;}
-  .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);}
+  .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);} .tag.tv{background:var(--tv);}
   .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.5rem;margin:0 0 4px;}
+  .entry img{width:100%;max-height:340px;object-fit:cover;border-radius:2px;margin:12px 0;display:block;}
   .subject{font-size:0.88rem;color:var(--ink-soft);margin-bottom:10px;}
   .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;margin-bottom:10px;line-height:1;}
   .stars .stars-back{color:var(--rule);}
@@ -57,7 +59,7 @@
 
 <header>
   <h1>Just Some Reviews</h1>
-  <p>One person's honest notes on films, games, and records.</p>
+  <p>One person's honest notes on films, TV, games, and records.</p>
 </header>
 
 <nav id="filters"></nav>
@@ -72,7 +74,7 @@
   // -----------------------------------------------------
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const CATS = { film: "Film", game: "Game", music: "Music" };
+  const CATS = { film: "Film", tv: "TV", game: "Game", music: "Music" };
   let ALL_REVIEWS = [];
   let currentFilter = 'all';
 
@@ -88,6 +90,9 @@
 
   let session = null;
   let profile = null;
+  const TURNSTILE_SITE_KEY = "YOUR-TURNSTILE-SITE-KEY";
+  let turnstileToken = null;
+  let turnstileWidgetId = null;
 
   async function initAuth(){
     const { data } = await sb.auth.getSession();
@@ -124,9 +129,16 @@
     forms.innerHTML = (mode === 'signup' ? `<input id="auth-name" placeholder="Your name">` : '')
       + `<input id="auth-email" type="email" placeholder="Email">
          <input id="auth-password" type="password" placeholder="Password">
+         ${mode === 'signup' ? `<div id="turnstile-signup-container"></div>` : ''}
          <button id="auth-submit">${mode === 'signup' ? 'Sign up' : 'Log in'}</button>
          <div id="auth-status"></div>`;
     document.getElementById('auth-submit').onclick = () => mode === 'signup' ? doSignup() : doLogin();
+    if(mode === 'signup' && window.turnstile){
+      turnstileWidgetId = turnstile.render('#turnstile-signup-container', {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (token) => { turnstileToken = token; }
+      });
+    }
   }
 
   async function doSignup(){
@@ -135,7 +147,13 @@
     const password = document.getElementById('auth-password').value;
     const status = document.getElementById('auth-status');
     if(!name || !email || !password){ status.textContent = 'All fields required.'; return; }
-    const { data, error } = await sb.auth.signUp({ email, password });
+    if(!turnstileToken){ status.textContent = 'Please complete the verification check.'; return; }
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { captchaToken: turnstileToken }
+    });
+    if(turnstileWidgetId !== null && window.turnstile) turnstile.reset(turnstileWidgetId);
+    turnstileToken = null;
     if(error){ status.textContent = error.message; return; }
     if(!data.session){ status.textContent = 'Check your email to confirm your account, then log in.'; return; }
     await sb.from('profiles').insert({ id: data.user.id, display_name: name });
@@ -197,6 +215,7 @@
           <span>${formatDate(r.created_at)}</span>
         </div>
         <h2>${r.title}</h2>
+        ${r.image_url ? `<img src="${r.image_url}" alt="${escapeHtml(r.title)}">` : ''}
         <div class="subject">${r.subject || ''}</div>
         <div class="stars">${stars(r.rating)}</div>
         <p class="body">${r.body}</p>

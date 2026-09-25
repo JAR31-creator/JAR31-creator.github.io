@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin — Just Some Reviews</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   body{font-family:sans-serif;max-width:480px;margin:60px auto;padding:0 20px;color:#1C1B19;}
   h1{font-size:1.4rem;}
@@ -23,6 +24,7 @@
   <h1>Log in</h1>
   <input id="email" type="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
+  <div id="turnstile-container" style="margin-bottom:12px;"></div>
   <button onclick="login()">Log in</button>
   <div id="login-status"></div>
 </div>
@@ -33,6 +35,7 @@
   <input id="subject" placeholder="Subject line (e.g. Directed by Celine Song, 2023)">
   <select id="category">
     <option value="film">Film</option>
+    <option value="tv">TV Show</option>
     <option value="game">Game</option>
     <option value="music">Music</option>
   </select>
@@ -48,6 +51,8 @@
     <option value="1">1 star</option>
   </select>
   <textarea id="body" placeholder="Your review"></textarea>
+  <label style="font-size:0.85rem;display:block;margin-bottom:4px;">Cover image (optional)</label>
+  <input id="image" type="file" accept="image/*">
   <button onclick="submitReview()">Publish review</button>
   <div id="status"></div>
 
@@ -58,7 +63,18 @@
 <script>
   const SUPABASE_URL = "https://lzktxoizovfjgkxkpbhw.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a3R4b2l6b3ZmamdreGtwYmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMDA3MDYsImV4cCI6MjEwNTg3NjcwNn0.NUWMnrx3XGoaDjQQovP5R100CDQL4Bk4Bix7kr52fJY";
+  const TURNSTILE_SITE_KEY = "0x4AAAAAAFDVvbmopL_cQoNQ";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let turnstileToken = null;
+  let turnstileWidgetId = null;
+
+  window.onload = function(){
+    turnstileWidgetId = turnstile.render('#turnstile-container', {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: (token) => { turnstileToken = token; }
+    });
+  };
 
   async function checkSession(){
     const { data } = await sb.auth.getSession();
@@ -92,7 +108,12 @@
   async function login(){
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const { error } = await sb.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({
+      email, password,
+      options: { captchaToken: turnstileToken }
+    });
+    if(turnstileWidgetId !== null) turnstile.reset(turnstileWidgetId);
+    turnstileToken = null;
     if(error){
       document.getElementById('login-status').textContent = error.message;
     } else {
@@ -106,13 +127,27 @@
     const category = document.getElementById('category').value;
     const rating = parseFloat(document.getElementById('rating').value);
     const body = document.getElementById('body').value.trim();
+    const imageFile = document.getElementById('image').files[0];
     const status = document.getElementById('status');
 
     if(!title || !body){
       status.textContent = "Title and review text are required.";
       return;
     }
-    const { error } = await sb.from('reviews').insert({ title, subject, category, rating, body });
+
+    let image_url = null;
+    if(imageFile){
+      status.textContent = "Uploading image…";
+      const path = Date.now() + '-' + imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+      const { error: uploadError } = await sb.storage.from('review-images').upload(path, imageFile);
+      if(uploadError){
+        status.textContent = "Image upload failed: " + uploadError.message;
+        return;
+      }
+      image_url = sb.storage.from('review-images').getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error } = await sb.from('reviews').insert({ title, subject, category, rating, body, image_url });
     if(error){
       status.textContent = "Error: " + error.message;
     } else {
@@ -120,6 +155,7 @@
       document.getElementById('title').value = '';
       document.getElementById('subject').value = '';
       document.getElementById('body').value = '';
+      document.getElementById('image').value = '';
       loadManageList();
     }
   }
