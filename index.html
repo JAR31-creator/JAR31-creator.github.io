@@ -146,22 +146,40 @@
   function showAuthForm(mode){
     const forms = document.getElementById('auth-forms');
     forms.style.display = 'flex';
-    forms.innerHTML = (mode === 'signup' ? `<input id="auth-name" placeholder="Your name">` : '')
-      + `<input id="auth-email" type="email" placeholder="Email">
-         <input id="auth-password" type="password" placeholder="Password">
-         <label style="font-size:0.75rem;display:flex;align-items:center;gap:4px;">
-           <input type="checkbox" onchange="document.getElementById('auth-password').type = this.checked ? 'text' : 'password';"> Show
-         </label>
+    forms.innerHTML = `<form id="auth-form" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
+      + (mode === 'signup' ? `<input id="auth-name" placeholder="Your name" autocomplete="name">` : '')
+      + `<input id="auth-email" type="email" placeholder="Email" autocomplete="${mode === 'signup' ? 'email' : 'username'}">
+         <div style="display:flex;align-items:center;gap:6px;">
+           <input id="auth-password" type="password" placeholder="Password" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}">
+           <label style="font-size:0.75rem;display:flex;align-items:center;gap:4px;white-space:nowrap;">
+             <input type="checkbox" onchange="document.getElementById('auth-password').type = this.checked ? 'text' : 'password';"> Show
+           </label>
+         </div>
          ${mode === 'signup' ? `<div id="turnstile-signup-container"></div>` : ''}
-         <button id="auth-submit">${mode === 'signup' ? 'Sign up' : 'Log in'}</button>
-         <div id="auth-status"></div>`;
-    document.getElementById('auth-submit').onclick = () => mode === 'signup' ? doSignup() : doLogin();
+         <button id="auth-submit" type="submit">${mode === 'signup' ? 'Sign up' : 'Log in'}</button>
+         ${mode === 'login' ? `<a href="#" onclick="forgotPassword(); return false;" style="font-size:0.8rem;">Forgot password?</a>` : ''}
+         <div id="auth-status" style="width:100%;"></div>
+       </form>`;
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      mode === 'signup' ? doSignup() : doLogin();
+    });
     if(mode === 'signup' && window.turnstile){
       turnstileWidgetId = turnstile.render('#turnstile-signup-container', {
         sitekey: TURNSTILE_SITE_KEY,
         callback: (token) => { turnstileToken = token; }
       });
     }
+  }
+
+  async function forgotPassword(){
+    const email = document.getElementById('auth-email').value.trim();
+    const status = document.getElementById('auth-status');
+    if(!email){ status.textContent = 'Enter your email above first, then click "Forgot password?" again.'; return; }
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    });
+    status.textContent = error ? error.message : 'Check your email for a password reset link.';
   }
 
   async function doSignup(){
@@ -173,13 +191,16 @@
     if(!turnstileToken){ status.textContent = 'Please complete the verification check.'; return; }
     const { data, error } = await sb.auth.signUp({
       email, password,
-      options: { captchaToken: turnstileToken }
+      options: {
+        captchaToken: turnstileToken,
+        data: { display_name: name },
+        emailRedirectTo: window.location.origin + '/'
+      }
     });
     if(turnstileWidgetId !== null && window.turnstile) turnstile.reset(turnstileWidgetId);
     turnstileToken = null;
     if(error){ status.textContent = error.message; return; }
     if(!data.session){ status.textContent = 'Check your email to confirm your account, then log in.'; return; }
-    await sb.from('profiles').insert({ id: data.user.id, display_name: name });
     session = data.session;
     profile = { display_name: name };
     renderAuthBar(); render(currentFilter);
