@@ -16,6 +16,12 @@
   #app{display:none;}
   .manage-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;}
   .manage-row button{background:#b3452f;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:0.8rem;}
+  .date-group{margin-top:8px;}
+  .date-group summary{font-weight:600;font-size:0.85rem;cursor:pointer;padding:6px 0;color:#333;list-style:none;user-select:none;}
+  .date-group summary::-webkit-details-marker{display:none;}
+  .date-group summary::before{content:'▶';display:inline-block;margin-right:6px;font-size:0.65rem;transition:transform 0.15s;}
+  .date-group[open] summary::before{transform:rotate(90deg);}
+  .date-group .count{color:#888;font-weight:400;font-size:0.78rem;}
 </style>
 </head>
 <body>
@@ -121,7 +127,9 @@
     list.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', async () => {
         if(!confirm('Delete "' + btn.parentElement.querySelector('span').textContent.trim() + '"? This also removes its comments and likes.')) return;
-        await sb.from('reviews').delete().eq('id', btn.dataset.id);
+        const { data, error } = await sb.from('reviews').delete().eq('id', btn.dataset.id).select();
+        if(error){ alert('Delete failed: ' + error.message); return; }
+        if(!data || data.length === 0){ alert('Nothing was deleted — this usually means your admin delete policy on the reviews table has the wrong User UID. Check Database → Policies → "admin write reviews".'); return; }
         loadManageList();
         loadCommentsList();
       });
@@ -141,21 +149,41 @@
       .order('created_at', {ascending:false});
     if(error){ list.textContent = 'Error loading comments.'; return; }
     if(!data.length){ list.textContent = 'No comments yet.'; return; }
-    list.innerHTML = data.map(c => `
-      <div class="manage-row">
-        <span>
-          <em>${escapeHtml(c.reviews ? c.reviews.title : 'Unknown review')}</em> —
-          <strong>${escapeHtml(c.author)}</strong>:
-          ${escapeHtml(c.body) || '(image only)'}
-          ${c.image_url ? ' 📷' : ''}
-        </span>
-        <button data-id="${c.id}">Delete</button>
-      </div>
+
+    const groups = [];
+    data.forEach(c => {
+      const dateLabel = new Date(c.created_at).toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+      const last = groups[groups.length - 1];
+      if(!last || last.label !== dateLabel){
+        groups.push({ label: dateLabel, items: [c] });
+      } else {
+        last.items.push(c);
+      }
+    });
+
+    list.innerHTML = groups.map((g, idx) => `
+      <details class="date-group" ${idx === 0 ? 'open' : ''}>
+        <summary>${g.label} <span class="count">(${g.items.length})</span></summary>
+        ${g.items.map(c => `
+          <div class="manage-row">
+            <span>
+              <em>${escapeHtml(c.reviews ? c.reviews.title : 'Unknown review')}</em> —
+              <strong>${escapeHtml(c.author)}</strong>:
+              ${escapeHtml(c.body) || '(image only)'}
+              ${c.image_url ? ' 📷' : ''}
+            </span>
+            <button data-id="${c.id}">Delete</button>
+          </div>
+        `).join('')}
+      </details>
     `).join('');
+
     list.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', async () => {
         if(!confirm('Delete this comment?')) return;
-        await sb.from('comments').delete().eq('id', btn.dataset.id);
+        const { data, error } = await sb.from('comments').delete().eq('id', btn.dataset.id).select();
+        if(error){ alert('Delete failed: ' + error.message); return; }
+        if(!data || data.length === 0){ alert('Nothing was deleted — this usually means your delete policy on the comments table has the wrong User UID. Check Database → Policies → "admin delete comments".'); return; }
         loadCommentsList();
       });
     });
