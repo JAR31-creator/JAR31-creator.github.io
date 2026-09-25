@@ -3,129 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Just Some Reviews — Reviews</title>
+<title>Just Some Reviews</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
-    --paper:#FAF8F4;
-    --ink:#1C1B19;
-    --ink-soft:#5A5751;
-    --rule:#DEDACF;
-    --film:#2F6F6E;
-    --game:#B3452F;
-    --music:#6B4E8E;
+    --paper:#FAF8F4; --ink:#1C1B19; --ink-soft:#5A5751; --rule:#DEDACF;
+    --film:#2F6F6E; --game:#B3452F; --music:#6B4E8E;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'Inter',sans-serif;
-    line-height:1.5;
-  }
-  header{
-    max-width:680px;
-    margin:0 auto;
-    padding:56px 24px 24px;
-  }
-  h1{
-    font-family:'Newsreader',serif;
-    font-weight:600;
-    font-size:2.4rem;
-    margin:0 0 6px;
-  }
-  header p{
-    color:var(--ink-soft);
-    margin:0;
-    font-size:0.95rem;
-  }
-  nav{
-    max-width:680px;
-    margin:0 auto;
-    padding:0 24px 32px;
-    display:flex;
-    gap:18px;
-    border-bottom:1px solid var(--rule);
-    padding-bottom:16px;
-  }
-  nav button{
-    font-family:'Inter',sans-serif;
-    font-size:0.9rem;
-    font-weight:500;
-    background:none;
-    border:none;
-    color:var(--ink-soft);
-    cursor:pointer;
-    padding:4px 0;
-    border-bottom:2px solid transparent;
-  }
-  nav button.active{
-    color:var(--ink);
-    border-bottom-color:var(--ink);
-  }
-  main{
-    max-width:680px;
-    margin:0 auto;
-    padding:8px 24px 80px;
-  }
-  .entry{
-    padding:32px 0;
-    border-bottom:1px solid var(--rule);
-  }
-  .entry:last-child{ border-bottom:none; }
-  .entry-meta{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:8px;
-    font-size:0.8rem;
-    color:var(--ink-soft);
-  }
-  .tag{
-    font-size:0.72rem;
-    font-weight:600;
-    padding:2px 8px;
-    border-radius:2px;
-    color:#fff;
-  }
-  .tag.film{ background:var(--film); }
-  .tag.game{ background:var(--game); }
-  .tag.music{ background:var(--music); }
-  .entry h2{
-    font-family:'Newsreader',serif;
-    font-weight:600;
-    font-style:italic;
-    font-size:1.5rem;
-    margin:0 0 4px;
-  }
-  .subject{
-    font-size:0.88rem;
-    color:var(--ink-soft);
-    margin-bottom:10px;
-  }
-  .stars{
-    letter-spacing:2px;
-    margin-bottom:10px;
-    color:var(--ink);
-  }
-  .stars .empty{ color:var(--rule); }
-  .entry p.body{
-    margin:0;
-    max-width:62ch;
-  }
-  footer{
-    max-width:680px;
-    margin:0 auto;
-    padding:0 24px 60px;
-    color:var(--ink-soft);
-    font-size:0.8rem;
-  }
-  .empty-state{
-    padding:60px 0;
-    color:var(--ink-soft);
-    font-style:italic;
-  }
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
+  header{max-width:680px;margin:0 auto;padding:56px 24px 24px;}
+  h1{font-family:'Newsreader',serif;font-weight:600;font-size:2.4rem;margin:0 0 6px;}
+  header p{color:var(--ink-soft);margin:0;font-size:0.95rem;}
+  nav{max-width:680px;margin:0 auto;padding:0 24px 32px;display:flex;gap:18px;border-bottom:1px solid var(--rule);padding-bottom:16px;}
+  nav button{font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px 0;border-bottom:2px solid transparent;}
+  nav button.active{color:var(--ink);border-bottom-color:var(--ink);}
+  main{max-width:680px;margin:0 auto;padding:8px 24px 80px;}
+  .entry{padding:32px 0;border-bottom:1px solid var(--rule);}
+  .entry:last-child{border-bottom:none;}
+  .entry-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:0.8rem;color:var(--ink-soft);}
+  .tag{font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:2px;color:#fff;}
+  .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);}
+  .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.5rem;margin:0 0 4px;}
+  .subject{font-size:0.88rem;color:var(--ink-soft);margin-bottom:10px;}
+  .stars{letter-spacing:2px;margin-bottom:10px;} .stars .empty{color:var(--rule);}
+  .entry p.body{margin:0 0 16px;max-width:62ch;}
+  .actions{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+  .like-btn{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:1px solid var(--rule);border-radius:20px;padding:5px 14px;cursor:pointer;color:var(--ink);}
+  .like-btn.liked{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .comments{margin-top:8px;}
+  .comment{padding:10px 0;border-top:1px solid var(--rule);font-size:0.88rem;}
+  .comment .who{font-weight:600;margin-right:6px;}
+  .comment-form{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-width:480px;}
+  .comment-form input, .comment-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);}
+  .comment-form textarea{min-height:60px;resize:vertical;}
+  .comment-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:20px;padding:7px 16px;cursor:pointer;}
+  .empty-state, .loading{padding:60px 0;color:var(--ink-soft);font-style:italic;}
+  footer{max-width:680px;margin:0 auto;padding:0 24px 60px;color:var(--ink-soft);font-size:0.8rem;}
 </style>
 </head>
 <body>
@@ -136,103 +52,117 @@
 </header>
 
 <nav id="filters"></nav>
-
-<main id="entries"></main>
-
+<main id="entries"><div class="loading">Loading reviews…</div></main>
 <footer>Updated by hand. New entries go straight into the source.</footer>
 
 <script>
-  // ---------------------------------------------------------------
-  // ADD NEW REVIEWS HERE. Copy an object below, change the values.
-  // category must be exactly: "film", "game", or "music"
-  // rating is a number from 1 to 5
-  // ---------------------------------------------------------------
-  const REVIEWS = [
-    {
-      title: "Past Lives",
-      subject: "Directed by Celine Song, 2023",
-      category: "film",
-      rating: 5,
-      date: "2026-09-10",
-      body: "Quiet in a way that trusts the audience. The long silences do more work than dialogue could, and the ending earns every bit of its ache."
-    },
-    {
-      title: "Baldur's Gate 3",
-      subject: "Larian Studios, 2023",
-      category: "game",
-      rating: 5,
-      date: "2026-08-22",
-      body: "The rare game where the systems and the writing are pulling in the same direction. I stopped optimizing my build and started just making choices I'd actually make."
-    },
-    {
-      title: "The Record",
-      subject: "boygenius, 2023",
-      category: "music",
-      rating: 4,
-      date: "2026-08-02",
-      body: "Best when the three voices actually fight each other instead of blending. A couple of tracks coast, but 'Cool About It' alone justifies the album."
-    },
-    {
-      title: "Dune: Part Two",
-      subject: "Directed by Denis Villeneuve, 2024",
-      category: "film",
-      rating: 4,
-      date: "2026-07-14",
-      body: "Bigger and colder than Part One, which is the point. Loses a little of the intimacy but gains something closer to myth."
-    }
-  ];
+  // ---- Fill these in from Project Settings -> API ----
+  const SUPABASE_URL = "https://lzktxoizovfjgkxkpbhw.supabase.co/rest/v1/";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a3R4b2l6b3ZmamdreGtwYmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMDA3MDYsImV4cCI6MjEwNTg3NjcwNn0.NUWMnrx3XGoaDjQQovP5R100CDQL4Bk4Bix7kr52fJY";
+  // -----------------------------------------------------
 
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const CATS = { film: "Film", game: "Game", music: "Music" };
+  let ALL_REVIEWS = [];
+  let currentFilter = 'all';
 
   function stars(n){
     let s = "";
     for(let i=0;i<5;i++) s += i < n ? "★" : "<span class='empty'>★</span>";
     return s;
   }
-
   function formatDate(d){
-    return new Date(d + "T00:00:00").toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   }
+  function hasLiked(id){ return localStorage.getItem('liked-' + id) === '1'; }
+  function markLiked(id){ localStorage.setItem('liked-' + id, '1'); }
 
-  function render(filter){
-    const list = filter === 'all' ? REVIEWS : REVIEWS.filter(r => r.category === filter);
-    const sorted = [...list].sort((a,b) => new Date(b.date) - new Date(a.date));
-    const container = document.getElementById('entries');
-    if(sorted.length === 0){
-      container.innerHTML = "<div class='empty-state'>No entries in this category yet.</div>";
-      return;
-    }
-    container.innerHTML = sorted.map(r => `
-      <article class="entry">
-        <div class="entry-meta">
-          <span class="tag ${r.category}">${CATS[r.category]}</span>
-          <span>${formatDate(r.date)}</span>
-        </div>
-        <h2>${r.title}</h2>
-        <div class="subject">${r.subject}</div>
-        <div class="stars">${stars(r.rating)}</div>
-        <p class="body">${r.body}</p>
-      </article>
-    `).join('');
+  async function loadAll(){
+    const { data: reviews } = await sb.from('reviews').select('*').order('created_at', {ascending:false});
+    const { data: comments } = await sb.from('comments').select('*').order('created_at', {ascending:true});
+    const { data: likes } = await sb.from('likes').select('review_id');
+
+    ALL_REVIEWS = (reviews || []).map(r => ({
+      ...r,
+      comments: (comments || []).filter(c => c.review_id === r.id),
+      likeCount: (likes || []).filter(l => l.review_id === r.id).length
+    }));
+
+    renderFilters();
+    render(currentFilter);
   }
 
   function renderFilters(){
-    const cats = ['all', ...new Set(REVIEWS.map(r => r.category))];
+    const cats = ['all', ...new Set(ALL_REVIEWS.map(r => r.category))];
     const nav = document.getElementById('filters');
     nav.innerHTML = cats.map(c =>
-      `<button data-cat="${c}" class="${c==='all' ? 'active' : ''}">${c === 'all' ? 'All' : CATS[c]}</button>`
+      `<button data-cat="${c}" class="${c===currentFilter?'active':''}">${c==='all'?'All':CATS[c]}</button>`
     ).join('');
     nav.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        nav.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        render(btn.dataset.cat);
+      btn.addEventListener('click', () => { currentFilter = btn.dataset.cat; renderFilters(); render(currentFilter); });
+    });
+  }
+
+  function render(filter){
+    const list = filter === 'all' ? ALL_REVIEWS : ALL_REVIEWS.filter(r => r.category === filter);
+    const container = document.getElementById('entries');
+    if(list.length === 0){
+      container.innerHTML = "<div class='empty-state'>No entries in this category yet.</div>";
+      return;
+    }
+    container.innerHTML = list.map(r => `
+      <article class="entry" data-id="${r.id}">
+        <div class="entry-meta">
+          <span class="tag ${r.category}">${CATS[r.category]}</span>
+          <span>${formatDate(r.created_at)}</span>
+        </div>
+        <h2>${r.title}</h2>
+        <div class="subject">${r.subject || ''}</div>
+        <div class="stars">${stars(r.rating)}</div>
+        <p class="body">${r.body}</p>
+        <div class="actions">
+          <button class="like-btn ${hasLiked(r.id)?'liked':''}" data-id="${r.id}">♥ ${r.likeCount} like${r.likeCount===1?'':'s'}</button>
+        </div>
+        <div class="comments">
+          ${r.comments.map(c => `<div class="comment"><span class="who">${escapeHtml(c.author)}</span>${escapeHtml(c.body)}</div>`).join('')}
+          <form class="comment-form" data-id="${r.id}">
+            <input type="text" name="author" placeholder="Your name" required maxlength="40">
+            <textarea name="body" placeholder="Add a comment…" required maxlength="500"></textarea>
+            <button type="submit">Post comment</button>
+          </form>
+        </div>
+      </article>
+    `).join('');
+
+    container.querySelectorAll('.like-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if(hasLiked(id)) return;
+        await sb.from('likes').insert({ review_id: id });
+        markLiked(id);
+        loadAll();
+      });
+    });
+    container.querySelectorAll('.comment-form').forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = form.dataset.id;
+        const author = form.author.value.trim();
+        const body = form.body.value.trim();
+        if(!author || !body) return;
+        await sb.from('comments').insert({ review_id: id, author, body });
+        loadAll();
       });
     });
   }
 
-  renderFilters();
-  render('all');
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  loadAll();
 </script>
 
 </body>

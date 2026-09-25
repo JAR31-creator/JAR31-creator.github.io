@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Just Some Reviews</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  body{font-family:sans-serif;max-width:480px;margin:60px auto;padding:0 20px;color:#1C1B19;}
+  h1{font-size:1.4rem;}
+  input, select, textarea{width:100%;padding:8px;margin-bottom:12px;font-size:0.95rem;box-sizing:border-box;}
+  textarea{min-height:100px;}
+  button{padding:8px 16px;cursor:pointer;}
+  #status{margin-top:10px;font-size:0.9rem;}
+  #app{display:none;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>Log in</h1>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Log in</button>
+  <div id="login-status"></div>
+</div>
+
+<div id="app">
+  <h1>Add a review</h1>
+  <input id="title" placeholder="Title (e.g. Past Lives)">
+  <input id="subject" placeholder="Subject line (e.g. Directed by Celine Song, 2023)">
+  <select id="category">
+    <option value="film">Film</option>
+    <option value="game">Game</option>
+    <option value="music">Music</option>
+  </select>
+  <select id="rating">
+    <option value="5">5 stars</option>
+    <option value="4">4 stars</option>
+    <option value="3">3 stars</option>
+    <option value="2">2 stars</option>
+    <option value="1">1 star</option>
+  </select>
+  <textarea id="body" placeholder="Your review"></textarea>
+  <button onclick="submitReview()">Publish review</button>
+  <div id="status"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://lzktxoizovfjgkxkpbhw.supabase.co/rest/v1/";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a3R4b2l6b3ZmamdreGtwYmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMDA3MDYsImV4cCI6MjEwNTg3NjcwNn0.NUWMnrx3XGoaDjQQovP5R100CDQL4Bk4Bix7kr52fJY";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function checkSession(){
+    const { data } = await sb.auth.getSession();
+    if(data.session){
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+    }
+  }
+
+  async function login(){
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){
+      document.getElementById('login-status').textContent = error.message;
+    } else {
+      checkSession();
+    }
+  }
+
+  async function submitReview(){
+    const title = document.getElementById('title').value.trim();
+    const subject = document.getElementById('subject').value.trim();
+    const category = document.getElementById('category').value;
+    const rating = parseInt(document.getElementById('rating').value, 10);
+    const body = document.getElementById('body').value.trim();
+    const status = document.getElementById('status');
+
+    if(!title || !body){
+      status.textContent = "Title and review text are required.";
+      return;
+    }
+    const { error } = await sb.from('reviews').insert({ title, subject, category, rating, body });
+    if(error){
+      status.textContent = "Error: " + error.message;
+    } else {
+      status.textContent = "Published! Check the live site.";
+      document.getElementById('title').value = '';
+      document.getElementById('subject').value = '';
+      document.getElementById('body').value = '';
+    }
+  }
+
+  checkSession();
+</script>
+
+</body>
+</html>
