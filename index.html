@@ -28,22 +28,6 @@
   .tag{font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:2px;color:#fff;}
   .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);} .tag.tv{background:var(--tv);}
   .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.5rem;margin:0 0 4px;}
-  .entry img{
-    float:right;
-    width:150px;
-    height:190px;
-    object-fit:contain;
-    background:#fff;
-    border:1px solid var(--rule);
-    border-radius:4px;
-    margin:0 0 12px 20px;
-    transition:transform 0.18s ease, box-shadow 0.18s ease;
-    cursor:pointer;
-  }
-  .entry img:hover{
-    transform:translateY(-4px);
-    box-shadow:0 8px 16px rgba(28,27,25,0.15);
-  }
   .subject{font-size:0.88rem;color:var(--ink-soft);margin-bottom:10px;}
   .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;margin-bottom:10px;line-height:1;}
   .stars .stars-back{color:var(--rule);}
@@ -52,36 +36,49 @@
   .actions{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
   .like-btn{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:1px solid var(--rule);border-radius:20px;padding:5px 14px;cursor:pointer;color:var(--ink);}
   .like-btn.liked{background:var(--ink);color:var(--paper);border-color:var(--ink);}
-  .comments{margin-top:8px;}
-  .comment{padding:10px 0;border-top:1px solid var(--rule);font-size:0.88rem;}
-  .comment.reply{border-top:none;padding-top:6px;padding-bottom:0;border-left:2px solid var(--rule);margin-top:6px;}
-  .reply-btn{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;padding:0;margin-top:4px;text-decoration:underline;display:inline-block;}
-  .comment-actions{display:flex;gap:14px;align-items:center;margin-top:6px;}
-  .comment-actions button{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;padding:0;display:flex;align-items:center;gap:3px;}
+  [hidden]{display:none !important;}
+  .comments{margin-top:4px;}
+  .comment{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:0.88rem;}
+  .comment.reply{padding:6px 0 0;}
+  .avatar{flex:none;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:600;font-size:0.85rem;display:flex;align-items:center;justify-content:center;user-select:none;}
+  .comment.reply .avatar{width:26px;height:26px;font-size:0.72rem;}
+  .comment-main{flex:1;min-width:0;}
+  .bubble{display:inline-block;max-width:100%;background:#EFEBE2;border-radius:16px;padding:7px 13px;overflow-wrap:anywhere;}
+  .bubble .who{display:block;font-weight:600;font-size:0.8rem;}
+  .comment .comment-img{display:block;max-width:220px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:12px;margin:6px 0 2px;background:#fff;cursor:zoom-in;}
+  .comment-actions{display:flex;gap:14px;align-items:center;margin:4px 0 0 12px;font-size:0.76rem;color:var(--ink-soft);}
+  .comment-actions time{cursor:default;}
+  .comment-actions button{background:none;border:none;color:var(--ink-soft);font-size:0.76rem;cursor:pointer;padding:2px;display:flex;align-items:center;gap:3px;border-radius:4px;}
   .comment-actions button:hover{color:var(--ink);}
   .comment-actions button.liked{color:var(--game);}
-  .edit-form{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:420px;}
-  .edit-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;min-height:44px;}
-  .edit-form button[type="submit"]{background:var(--ink);color:var(--paper);}
-  .edit-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.8rem;border:none;border-radius:16px;padding:5px 12px;cursor:pointer;background:#eee;color:var(--ink);}
-  .reply-form{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:420px;}
-  .reply-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;min-height:44px;}
-  .reply-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.8rem;background:var(--ink);color:var(--paper);border:none;border-radius:16px;padding:5px 12px;cursor:pointer;}
-  .comment .who{font-weight:600;margin-right:6px;}
-  .comment-form{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-width:480px;}
-  .comment-form input, .comment-form textarea{font-family:'Inter',sans-serif;font-size:0.85rem;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);}
-  .comment-form textarea{min-height:60px;resize:vertical;}
-  .comment-form button{align-self:flex-start;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:20px;padding:7px 16px;cursor:pointer;}
-  .comment .comment-img{float:none;display:block;width:auto;height:auto;max-width:220px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:4px;margin:8px 0 10px;background:#fff;cursor:pointer;}
+  .like-count-static{display:flex;align-items:center;gap:3px;}
+  .thread-toggle{background:none;border:none;padding:0;margin:6px 0 0 12px;font-family:inherit;font-size:0.78rem;font-weight:600;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;gap:8px;}
+  .thread-toggle::before{content:'';width:22px;height:1px;background:currentColor;}
+  .thread-toggle:hover{color:var(--ink);}
+  .edit-form{display:flex;flex-direction:column;gap:6px;max-width:440px;}
+  .edit-form textarea{font-family:inherit;font-size:0.88rem;line-height:1.4;padding:8px 13px;border:1px solid var(--rule);border-radius:16px;min-height:40px;resize:none;background:#fff;color:var(--ink);}
+  .edit-row{display:flex;gap:6px;}
+  .edit-row button{font-family:inherit;font-size:0.8rem;border:none;border-radius:16px;padding:5px 12px;cursor:pointer;background:#EFEBE2;color:var(--ink);}
+  .edit-row button[type="submit"]{background:var(--ink);color:var(--paper);}
+  .comment-form, .reply-form{display:flex;flex-direction:column;gap:6px;}
+  .comment-form{margin-top:14px;max-width:520px;}
+  .reply-form{margin-top:8px;max-width:440px;}
   .comment-input-wrap{position:relative;}
-  .comment-input-wrap textarea{width:100%;box-sizing:border-box;padding-bottom:34px;}
-  .comment-toolbar{position:absolute;bottom:8px;right:8px;display:flex;gap:8px;}
-  .comment-toolbar button{background:none;border:none;cursor:pointer;padding:2px;line-height:1;display:flex;align-items:center;color:var(--ink-soft);}
+  .comment-input-wrap textarea{display:block;width:100%;min-height:42px;max-height:220px;padding:10px 70px 10px 14px;font-family:inherit;font-size:0.88rem;line-height:1.4;border:1px solid var(--rule);border-radius:21px;background:#fff;color:var(--ink);resize:none;}
+  .comment-input-wrap textarea:focus{outline:none;border-color:var(--ink-soft);}
+  .comment-toolbar{position:absolute;bottom:10px;right:12px;display:flex;gap:8px;}
+  .comment-toolbar button{background:none;border:none;cursor:pointer;padding:2px;line-height:1;display:flex;align-items:center;color:var(--ink-soft);border-radius:50%;}
   .comment-toolbar button:hover{color:var(--ink);}
-  .emoji-popup{position:absolute;bottom:38px;right:8px;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:6px;display:none;gap:4px;box-shadow:0 4px 10px rgba(28,27,25,0.12);z-index:5;}
-  .emoji-popup.open{display:flex;}
-  .emoji-popup button{background:none;border:none;font-size:1.1rem;cursor:pointer;padding:2px 4px;}
-  .file-indicator{font-size:0.75rem;color:var(--ink-soft);margin-top:4px;}
+  .emoji-popup{position:absolute;bottom:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--rule);border-radius:12px;padding:6px;display:none;gap:2px;box-shadow:0 6px 18px rgba(28,27,25,0.14);z-index:5;}
+  .emoji-popup.open{display:flex;animation:rise .14s ease-out;}
+  .emoji-popup button{background:none;border:none;font-size:1.2rem;cursor:pointer;padding:3px 5px;border-radius:8px;transition:transform .1s;}
+  .emoji-popup button:hover{background:#F1EDE3;transform:scale(1.15);}
+  .file-indicator{font-size:0.76rem;color:var(--ink-soft);padding-left:12px;}
+  .file-indicator:empty{display:none;}
+  .remove-file{background:none;border:none;padding:0;margin-left:6px;font:inherit;color:var(--game);text-decoration:underline;cursor:pointer;}
+  .post-btn{align-self:flex-start;font-family:inherit;font-size:0.82rem;font-weight:600;background:var(--ink);color:var(--paper);border:none;border-radius:18px;padding:6px 16px;cursor:pointer;transition:opacity .15s;}
+  .post-btn:disabled{opacity:0.35;cursor:default;}
+  .login-hint{font-size:0.82rem;color:var(--ink-soft);margin-top:10px;}
   #lightbox{display:none;position:fixed;inset:0;background:rgba(20,19,17,0.88);z-index:1000;align-items:center;justify-content:center;cursor:zoom-out;}
   #lightbox.open{display:flex;}
   #lightbox img{max-width:90%;max-height:90%;border-radius:4px;}
@@ -93,6 +90,29 @@
   #auth-forms input{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;}
   #auth-forms button{background:var(--ink);color:var(--paper);border-radius:20px;padding:6px 14px;text-decoration:none;}
   #auth-status{width:100%;font-size:0.8rem;color:var(--game);}
+  .cover{float:right;position:relative;margin:0 0 12px 20px;cursor:zoom-in;touch-action:manipulation;user-select:none;border-radius:4px;}
+  .cover img{display:block;width:150px;height:190px;object-fit:contain;background:#fff;border:1px solid var(--rule);border-radius:4px;transition:transform .18s ease, box-shadow .18s ease;}
+  .cover:hover img{transform:translateY(-4px);box-shadow:0 8px 16px rgba(28,27,25,0.15);}
+  .burst{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.2rem;opacity:0;pointer-events:none;}
+  .burst.go{animation:burst .8s ease-out;}
+  @keyframes burst{0%{opacity:0;transform:scale(.3);}15%{opacity:1;transform:scale(1.2);}30%{transform:scale(.95);}45%{transform:scale(1);}75%{opacity:1;}100%{opacity:0;transform:scale(1.05);}}
+  .heart{display:inline-block;}
+  @keyframes pop{0%{transform:scale(1);}35%{transform:scale(1.4);}100%{transform:scale(1);}}
+  .pop svg, .pop .heart{animation:pop .35s ease-out;}
+  @keyframes rise{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+  #lightbox.open{animation:fade .15s ease-out;}
+  button:active:not(:disabled){transform:scale(0.96);}
+  button:focus-visible, textarea:focus-visible, input:focus-visible, .cover:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  nav{position:sticky;top:0;z-index:20;background:rgba(250,248,244,0.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding-top:12px;}
+  #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,16px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:22px;font-size:0.85rem;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:1100;max-width:calc(100% - 32px);}
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+  #toast.error{background:var(--game);}
+  .skeleton{padding:32px 0;border-bottom:1px solid var(--rule);}
+  .sk{background:linear-gradient(90deg,#ECE8DF 25%,#F4F1EA 50%,#ECE8DF 75%);background-size:200% 100%;animation:shimmer 1.3s linear infinite;border-radius:4px;margin-bottom:10px;}
+  .sk-meta{width:120px;height:12px;} .sk-title{width:55%;height:22px;} .sk-line{height:12px;} .w90{width:90%;} .w70{width:70%;}
+  @keyframes shimmer{from{background-position:200% 0;}to{background-position:-200% 0;}}
+  @media (prefers-reduced-motion: reduce){ *, *::before, *::after{animation:none !important;transition:none !important;} }
 </style>
 </head>
 <body>
@@ -104,10 +124,11 @@
 
 <nav id="filters"></nav>
 <div id="authbar"></div>
-<main id="entries"><div class="loading">Loading reviews…</div></main>
+<main id="entries" aria-busy="true"><div class="skeleton"><div class="sk sk-meta"></div><div class="sk sk-title"></div><div class="sk sk-line w90"></div><div class="sk sk-line w70"></div></div><div class="skeleton"><div class="sk sk-meta"></div><div class="sk sk-title"></div><div class="sk sk-line w90"></div><div class="sk sk-line w70"></div></div></main>
 <footer>Updated by hand. New entries go straight into the source.</footer>
 
 <div id="lightbox"><img id="lightbox-img" src="" alt="Full size image"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
   // ---- Fill these in from Project Settings -> API ----
@@ -302,24 +323,68 @@
     camera: `<svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="6.5" width="16" height="10.5" rx="2"/><path d="M7 6.5l1.3-2h3.4l1.3 2" stroke-linejoin="round"/><circle cx="10" cy="11.5" r="3"/></svg>`
   };
   const EMOJI_PICKS = ['😀','😂','😍','👍','🔥','😢'];
+  const AVATAR_COLORS = ['#2F6F6E', '#B3452F', '#6B4E8E', '#B08B1E', '#5A5751'];
+  let popTarget = null;               // which like button should play its "pop" on the next render
+  const expandedThreads = new Set();  // comment ids whose replies are currently shown
+
+  function avatarFor(name){
+    const n = (name || '?').trim() || '?';
+    let h = 0;
+    for(const ch of n) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+    const initial = escapeHtml(Array.from(n)[0].toUpperCase());
+    return `<div class="avatar" style="background:${AVATAR_COLORS[h % AVATAR_COLORS.length]}" aria-hidden="true">${initial}</div>`;
+  }
+
+  function timeAgo(d){
+    const secs = Math.max(0, (Date.now() - new Date(d).getTime()) / 1000);
+    if(secs < 60) return 'Just now';
+    const mins = Math.floor(secs / 60); if(mins < 60) return mins + 'm';
+    const hrs = Math.floor(mins / 60);  if(hrs < 24) return hrs + 'h';
+    const days = Math.floor(hrs / 24);  if(days < 7) return days + 'd';
+    return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  }
+
+  let toastTimer = null;
+  function showToast(msg, isError){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', !!isError);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
 
   function renderComment(c, allComments, reviewId, depth){
     const replies = allComments.filter(x => x.parent_comment_id === c.id);
-    const indent = Math.min(depth, 3) * 18;
     const isOwner = session && c.user_id === session.user.id;
     const likedByMe = !!(session && c.likerIds.includes(session.user.id));
+    const expanded = expandedThreads.has(c.id);
+    const fullDate = new Date(c.created_at).toLocaleString('en-US', { dateStyle:'long', timeStyle:'short' });
+    const likeLabel = likedByMe ? 'Unlike' : 'Like';
+    const likeControl = session && profile
+      ? `<button type="button" class="comment-like-btn ${likedByMe ? 'liked' : ''} ${popTarget === 'c-' + c.id ? 'pop' : ''}" data-id="${c.id}" title="${likeLabel}" aria-label="${likeLabel}" aria-pressed="${likedByMe}">${ICONS.like(likedByMe)}${c.likeCount ? `<span>${c.likeCount}</span>` : ''}</button>`
+      : (c.likeCount ? `<span class="like-count-static" title="Likes">${ICONS.like(false)}<span>${c.likeCount}</span></span>` : '');
+    const repliesLabel = expanded ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`;
     return `
-      <div class="comment ${depth > 0 ? 'reply' : ''}" style="margin-left:${indent}px;">
-        <span class="who">${escapeHtml(c.author)}</span><span class="comment-text">${escapeHtml(c.body)}</span>
-        ${c.image_url ? `<img class="comment-img" src="${c.image_url}" alt="attached image">` : ''}
-        <div class="comment-actions">
-          ${session && profile ? `<button type="button" class="comment-like-btn ${likedByMe ? 'liked' : ''}" data-id="${c.id}" title="${likedByMe ? 'Unlike' : 'Like'}" aria-label="${likedByMe ? 'Unlike' : 'Like'}">${ICONS.like(likedByMe)}<span>${c.likeCount}</span></button>` : ''}
-          ${session && profile ? `<button type="button" class="reply-btn" data-id="${c.id}" data-review="${reviewId}" title="Reply" aria-label="Reply">${ICONS.reply}</button>` : ''}
-          ${isOwner ? `<button type="button" class="edit-btn" data-id="${c.id}" title="Edit" aria-label="Edit">${ICONS.edit}</button>` : ''}
-          ${isOwner ? `<button type="button" class="delete-comment-btn" data-id="${c.id}" title="Delete" aria-label="Delete">${ICONS.delete}</button>` : ''}
+      <div class="comment ${depth > 0 ? 'reply' : ''}" data-id="${c.id}">
+        ${avatarFor(c.author)}
+        <div class="comment-main">
+          <div class="bubble"><span class="who">${escapeHtml(c.author)}</span><span class="comment-text">${escapeHtml(c.body)}</span></div>
+          ${c.image_url ? `<img class="comment-img" src="${c.image_url}" alt="Image shared by ${escapeHtml(c.author)}">` : ''}
+          <div class="comment-actions">
+            <time datetime="${c.created_at}" title="${fullDate}">${timeAgo(c.created_at)}</time>
+            ${likeControl}
+            ${session && profile ? `<button type="button" class="reply-btn" data-id="${c.id}" data-review="${reviewId}" title="Reply" aria-label="Reply">${ICONS.reply}</button>` : ''}
+            ${isOwner ? `<button type="button" class="edit-btn" data-id="${c.id}" title="Edit" aria-label="Edit">${ICONS.edit}</button>` : ''}
+            ${isOwner ? `<button type="button" class="delete-comment-btn" data-id="${c.id}" title="Delete" aria-label="Delete">${ICONS.delete}</button>` : ''}
+          </div>
+          <div class="reply-form-container"></div>
+          ${replies.length ? `
+            <button type="button" class="thread-toggle" data-id="${c.id}" aria-expanded="${expanded}">${repliesLabel}</button>
+            <div class="replies" ${expanded ? '' : 'hidden'}>
+              ${replies.map(r => renderComment(r, allComments, reviewId, depth + 1)).join('')}
+            </div>` : ''}
         </div>
-        <div class="reply-form-container" data-parent="${c.id}"></div>
-        ${replies.map(r => renderComment(r, allComments, reviewId, depth + 1)).join('')}
       </div>
     `;
   }
@@ -332,85 +397,97 @@
     return null;
   }
 
+  function autoGrow(textarea){
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight + 2, 220) + 'px';
+  }
+
   function toggleEditForm(commentId, currentBody, wrapper){
-    const existingForm = wrapper.querySelector('.edit-form');
-    if(existingForm){
-      existingForm.remove();
-      wrapper.querySelector('.comment-text').style.display = '';
+    const bubble = wrapper.querySelector('.bubble');
+    const existing = bubble.nextElementSibling;
+    if(existing && existing.classList.contains('edit-form')){
+      existing.remove();
+      bubble.hidden = false;
       return;
     }
-    wrapper.querySelector('.comment-text').style.display = 'none';
     const form = document.createElement('form');
     form.className = 'edit-form';
-    const textarea = document.createElement('textarea');
-    textarea.value = currentBody;
-    textarea.maxLength = 500;
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'submit';
-    saveBtn.textContent = 'Save';
-    const cancelBtn = document.createElement('button');
-    cancelBtn.type = 'button';
-    cancelBtn.textContent = 'Cancel';
-    const row = document.createElement('div');
-    row.style.display = 'flex';
-    row.style.gap = '6px';
-    row.appendChild(saveBtn);
-    row.appendChild(cancelBtn);
-    form.appendChild(textarea);
-    form.appendChild(row);
-    cancelBtn.addEventListener('click', () => {
-      form.remove();
-      wrapper.querySelector('.comment-text').style.display = '';
-    });
+    form.innerHTML = `
+      <textarea maxlength="500" aria-label="Edit your comment"></textarea>
+      <div class="edit-row"><button type="submit">Save</button><button type="button" class="cancel">Cancel</button></div>`;
+    const textarea = form.querySelector('textarea');
+    textarea.value = currentBody || '';
+    const close = () => { form.remove(); bubble.hidden = false; };
+    form.querySelector('.cancel').addEventListener('click', close);
+    textarea.addEventListener('input', () => autoGrow(textarea));
+    textarea.addEventListener('keydown', (e) => { if(e.key === 'Escape') close(); });
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const newBody = textarea.value.trim();
       if(!newBody) return;
-      await sb.from('comments').update({ body: newBody }).eq('id', commentId);
+      const { error } = await sb.from('comments').update({ body: newBody }).eq('id', commentId);
+      if(error){ showToast("Couldn't save your edit: " + error.message, true); return; }
+      showToast('Comment updated');
       loadAll();
     });
-    wrapper.appendChild(form);
+    bubble.hidden = true;
+    bubble.after(form);
+    autoGrow(textarea);
+    textarea.focus();
   }
 
-  function toggleReplyForm(parentId, reviewId, container){
-    const existing = container.querySelector('.reply-form');
-    if(existing){ existing.remove(); return; }
-    const form = document.createElement('form');
-    form.className = 'reply-form';
-    form.innerHTML = `
+  // Shared markup for the main comment box and reply boxes
+  function composerHTML(placeholder, submitLabel){
+    return `
       <div class="comment-input-wrap">
-        <textarea placeholder="Write a reply…" maxlength="500"></textarea>
+        <textarea rows="1" placeholder="${placeholder}" maxlength="500" aria-label="${placeholder}"></textarea>
         <div class="comment-toolbar">
-          <button type="button" class="emoji-toggle" title="Add emoji">${ICONS.smile}</button>
-          <button type="button" class="camera-toggle" title="Add photo/GIF">${ICONS.camera}</button>
+          <button type="button" class="emoji-toggle" title="Add emoji" aria-label="Add emoji">${ICONS.smile}</button>
+          <button type="button" class="camera-toggle" title="Add photo or GIF" aria-label="Add photo or GIF">${ICONS.camera}</button>
         </div>
         <div class="emoji-popup">
-          ${EMOJI_PICKS.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('')}
+          ${EMOJI_PICKS.map(e => `<button type="button" data-emoji="${e}" aria-label="Insert ${e}">${e}</button>`).join('')}
         </div>
-        <input class="comment-file" type="file" accept="image/*,.gif" style="display:none;">
+        <input class="comment-file" type="file" accept="image/*,.gif" hidden>
       </div>
       <div class="file-indicator"></div>
-      <button type="submit">Post reply</button>
-    `;
+      <button type="submit" class="post-btn" disabled>${submitLabel}</button>`;
+  }
 
+  // Shared behavior: emoji picker, photo attach, auto-grow, upload, then save(body, image_url)
+  function wireComposer(form, submitLabel, save){
     const textarea = form.querySelector('textarea');
-    const emojiToggle = form.querySelector('.emoji-toggle');
-    const emojiPopup = form.querySelector('.emoji-popup');
-    const cameraToggle = form.querySelector('.camera-toggle');
+    const popup = form.querySelector('.emoji-popup');
     const fileInput = form.querySelector('.comment-file');
-    const fileIndicator = form.querySelector('.file-indicator');
+    const indicator = form.querySelector('.file-indicator');
+    const submitBtn = form.querySelector('.post-btn');
+    const refresh = () => { submitBtn.disabled = !textarea.value.trim() && !fileInput.files[0]; };
 
-    emojiToggle.addEventListener('click', () => emojiPopup.classList.toggle('open'));
-    emojiPopup.querySelectorAll('button').forEach(btn => {
+    textarea.addEventListener('input', () => { autoGrow(textarea); refresh(); });
+    form.querySelector('.emoji-toggle').addEventListener('click', () => popup.classList.toggle('open'));
+    popup.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
-        textarea.value += btn.dataset.emoji;
+        const start = textarea.selectionStart ?? textarea.value.length;
+        const end = textarea.selectionEnd ?? textarea.value.length;
+        textarea.setRangeText(btn.dataset.emoji, start, end, 'end');
+        popup.classList.remove('open');
         textarea.focus();
-        emojiPopup.classList.remove('open');
+        autoGrow(textarea);
+        refresh();
       });
     });
-    cameraToggle.addEventListener('click', () => fileInput.click());
+    form.querySelector('.camera-toggle').addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', () => {
-      fileIndicator.textContent = fileInput.files[0] ? '📎 ' + fileInput.files[0].name : '';
+      const file = fileInput.files[0];
+      indicator.innerHTML = file ? `📎 ${escapeHtml(file.name)}<button type="button" class="remove-file">Remove</button>` : '';
+      if(file){
+        indicator.querySelector('.remove-file').addEventListener('click', () => {
+          fileInput.value = '';
+          indicator.innerHTML = '';
+          refresh();
+        });
+      }
+      refresh();
     });
 
     form.addEventListener('submit', async (e) => {
@@ -418,26 +495,71 @@
       const body = textarea.value.trim();
       const imageFile = fileInput.files[0];
       if(!body && !imageFile) return;
-      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = imageFile ? 'Uploading…' : 'Posting…';
       let image_url = null;
       if(imageFile){
-        submitBtn.textContent = 'Uploading…';
         const path = crypto.randomUUID() + '-' + imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
         const { error: uploadError } = await sb.storage.from('comment-images').upload(path, imageFile);
         if(uploadError){
-          alert('Image upload failed: ' + uploadError.message);
-          submitBtn.textContent = 'Post reply';
+          showToast("Couldn't upload the image: " + uploadError.message, true);
+          submitBtn.textContent = submitLabel;
+          refresh();
           return;
         }
         image_url = sb.storage.from('comment-images').getPublicUrl(path).data.publicUrl;
       }
-      await sb.from('comments').insert({
+      const ok = await save(body, image_url);
+      if(!ok){ submitBtn.textContent = submitLabel; refresh(); }
+    });
+  }
+
+  function toggleReplyForm(parentId, reviewId, container){
+    const existing = container.querySelector('.reply-form');
+    if(existing){ existing.remove(); return; }
+    const form = document.createElement('form');
+    form.className = 'reply-form';
+    form.innerHTML = composerHTML('Write a reply…', 'Reply');
+    wireComposer(form, 'Reply', async (body, image_url) => {
+      const { error } = await sb.from('comments').insert({
         review_id: reviewId, author: profile.display_name, user_id: session.user.id,
         body, parent_comment_id: parentId, image_url
       });
+      if(error){ showToast("Couldn't post your reply: " + error.message, true); return false; }
+      expandedThreads.add(parentId);
+      showToast('Reply posted');
       loadAll();
+      return true;
     });
     container.appendChild(form);
+    form.querySelector('textarea').focus();
+  }
+
+  // Returns true if a like/dislike was added, false if removed or failed
+  async function castVote(id, type){
+    const current = getVote(id);
+    if(current && current.type === type){
+      await sb.from('likes').delete().eq('id', current.rowId);
+      setVote(id, null);
+      return false;
+    }
+    if(current) await sb.from('likes').delete().eq('id', current.rowId);
+    const { data, error } = await sb.from('likes').insert({ review_id: id, type }).select().single();
+    if(error){ showToast("Couldn't save your vote: " + error.message, true); return false; }
+    setVote(id, { type, rowId: data.id });
+    return true;
+  }
+
+  async function likeFromDoubleTap(cover){
+    const id = cover.dataset.id;
+    const burst = cover.querySelector('.burst');
+    burst.classList.remove('go');
+    void burst.offsetWidth; // restart the animation if tapped again quickly
+    burst.classList.add('go');
+    if(getVote(id)?.type === 'like') return; // already liked: just show the heart, like Instagram
+    const letAnimationFinish = new Promise(res => setTimeout(res, 800));
+    await Promise.all([castVote(id, 'like'), letAnimationFinish]);
+    loadAll();
   }
 
   function render(filter){
@@ -447,161 +569,124 @@
       container.innerHTML = "<div class='empty-state'>No entries in this category yet.</div>";
       return;
     }
-    container.innerHTML = list.map(r => `
+    container.innerHTML = list.map(r => {
+      const vote = getVote(r.id)?.type;
+      return `
       <article class="entry" data-id="${r.id}">
         <div class="entry-meta">
           <span class="tag ${r.category}">${CATS[r.category]}</span>
           <span>${formatDate(r.created_at)}</span>
         </div>
-        ${r.image_url ? `<img src="${r.image_url}" alt="${escapeHtml(r.title)}">` : ''}
+        ${r.image_url ? `
+          <div class="cover" data-id="${r.id}" tabindex="0" role="button" title="Click to enlarge, double-click to like" aria-label="Enlarge cover image for ${escapeHtml(r.title)}">
+            <img src="${r.image_url}" alt="${escapeHtml(r.title)}">
+            <div class="burst" aria-hidden="true">❤️</div>
+          </div>` : ''}
         <h2>${r.title}</h2>
         <div class="subject">${r.subject || ''}</div>
         <div class="stars">${stars(r.rating)}</div>
         <p class="body">${r.body}</p>
         <div class="actions">
-          <button class="like-btn vote-btn ${getVote(r.id)?.type==='like'?'liked':''}" data-id="${r.id}" data-type="like">❤️ ${r.likeCount}</button>
-          <button class="like-btn vote-btn ${getVote(r.id)?.type==='dislike'?'liked':''}" data-id="${r.id}" data-type="dislike">👎 ${r.dislikeCount}</button>
+          <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="Like"><span class="heart">❤️</span> ${r.likeCount}</button>
+          <button class="like-btn vote-btn ${vote === 'dislike' ? 'liked' : ''} ${popTarget === `r-${r.id}-dislike` ? 'pop' : ''}" data-id="${r.id}" data-type="dislike" aria-pressed="${vote === 'dislike'}" title="Dislike"><span class="heart">👎</span> ${r.dislikeCount}</button>
         </div>
         <div class="comments">
           ${r.comments.filter(c => !c.parent_comment_id).map(c => renderComment(c, r.comments, r.id, 0)).join('')}
-          ${session && profile ? `
-            <form class="comment-form" data-id="${r.id}">
-              <div class="comment-input-wrap">
-                <textarea name="body" placeholder="Add a comment…" maxlength="500"></textarea>
-                <div class="comment-toolbar">
-                  <button type="button" class="emoji-toggle" title="Add emoji">
-                    <svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4">
-                      <circle cx="10" cy="10" r="8"/>
-                      <circle cx="7" cy="8.2" r="0.9" fill="currentColor" stroke="none"/>
-                      <circle cx="13" cy="8.2" r="0.9" fill="currentColor" stroke="none"/>
-                      <path d="M6.5 12c1.2 1.6 5.8 1.6 7 0" stroke-linecap="round"/>
-                    </svg>
-                  </button>
-                  <button type="button" class="camera-toggle" title="Add photo/GIF">
-                    <svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4">
-                      <rect x="2" y="6.5" width="16" height="10.5" rx="2"/>
-                      <path d="M7 6.5l1.3-2h3.4l1.3 2" stroke-linejoin="round"/>
-                      <circle cx="10" cy="11.5" r="3"/>
-                    </svg>
-                  </button>
-                </div>
-                <div class="emoji-popup">
-                  <button type="button" data-emoji="😀">😀</button>
-                  <button type="button" data-emoji="😂">😂</button>
-                  <button type="button" data-emoji="😍">😍</button>
-                  <button type="button" data-emoji="👍">👍</button>
-                  <button type="button" data-emoji="🔥">🔥</button>
-                  <button type="button" data-emoji="😢">😢</button>
-                </div>
-                <input class="comment-file" type="file" name="image" accept="image/*,.gif" style="display:none;">
-              </div>
-              <div class="file-indicator"></div>
-              <button type="submit">Post comment</button>
-            </form>
-          ` : `<p style="font-size:0.82rem;color:var(--ink-soft);margin-top:10px;">Log in above to add a comment.</p>`}
+          ${session && profile
+            ? `<form class="comment-form" data-id="${r.id}">${composerHTML('Add a comment…', 'Post')}</form>`
+            : `<p class="login-hint">Log in above to add a comment.</p>`}
         </div>
-      </article>
-    `).join('');
+      </article>`;
+    }).join('');
+    popTarget = null;
 
     container.querySelectorAll('.vote-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const type = btn.dataset.type;
-        const current = getVote(id);
-
-        if(current && current.type === type){
-          // clicking the same button again removes your vote
-          await sb.from('likes').delete().eq('id', current.rowId);
-          setVote(id, null);
-        } else {
-          if(current){
-            // switching from like to dislike or vice versa
-            await sb.from('likes').delete().eq('id', current.rowId);
-          }
-          const { data, error } = await sb.from('likes').insert({ review_id: id, type }).select().single();
-          if(!error && data){
-            setVote(id, { type, rowId: data.id });
-          }
-        }
+        const added = await castVote(btn.dataset.id, btn.dataset.type);
+        if(added) popTarget = `r-${btn.dataset.id}-${btn.dataset.type}`;
         loadAll();
       });
     });
+
+    container.querySelectorAll('.cover').forEach(cover => {
+      let clickTimer = null;
+      cover.addEventListener('click', () => {
+        if(clickTimer){
+          clearTimeout(clickTimer);
+          clickTimer = null;
+          likeFromDoubleTap(cover);
+        } else {
+          clickTimer = setTimeout(() => {
+            clickTimer = null;
+            openLightbox(cover.querySelector('img').src);
+          }, 260);
+        }
+      });
+      cover.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openLightbox(cover.querySelector('img').src); }
+      });
+    });
+
     container.querySelectorAll('.comment-like-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const found = findCommentById(id);
         if(!found) return;
-        if(found.likerIds.includes(session.user.id)){
-          await sb.from('comment_likes').delete().eq('comment_id', id).eq('user_id', session.user.id);
-        } else {
-          await sb.from('comment_likes').insert({ comment_id: id, user_id: session.user.id });
-        }
+        const liking = !found.likerIds.includes(session.user.id);
+        const { error } = liking
+          ? await sb.from('comment_likes').insert({ comment_id: id, user_id: session.user.id })
+          : await sb.from('comment_likes').delete().eq('comment_id', id).eq('user_id', session.user.id);
+        if(error){ showToast("Couldn't update your like: " + error.message, true); return; }
+        if(liking) popTarget = 'c-' + id;
         loadAll();
       });
     });
+
+    container.querySelectorAll('.thread-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const box = btn.nextElementSibling;
+        const opening = box.hidden;
+        box.hidden = !opening;
+        if(opening) expandedThreads.add(btn.dataset.id); else expandedThreads.delete(btn.dataset.id);
+        const n = box.children.length;
+        btn.textContent = opening ? 'Hide replies' : `View ${n} ${n === 1 ? 'reply' : 'replies'}`;
+        btn.setAttribute('aria-expanded', opening);
+      });
+    });
+
     container.querySelectorAll('.reply-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const wrapper = btn.closest('.comment').querySelector('.reply-form-container');
         toggleReplyForm(btn.dataset.id, btn.dataset.review, wrapper);
       });
     });
+
     container.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const found = findCommentById(btn.dataset.id);
-        const wrapper = btn.closest('.comment');
-        if(found) toggleEditForm(btn.dataset.id, found.body, wrapper);
+        if(found) toggleEditForm(btn.dataset.id, found.body, btn.closest('.comment'));
       });
     });
+
     container.querySelectorAll('.delete-comment-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if(!confirm('Delete your comment?')) return;
-        await sb.from('comments').delete().eq('id', btn.dataset.id);
+        if(!confirm('Delete your comment? Any replies to it will be deleted too.')) return;
+        const { error } = await sb.from('comments').delete().eq('id', btn.dataset.id);
+        if(error){ showToast("Couldn't delete your comment: " + error.message, true); return; }
+        showToast('Comment deleted');
         loadAll();
       });
     });
+
     container.querySelectorAll('.comment-form').forEach(form => {
-      const emojiToggle = form.querySelector('.emoji-toggle');
-      const emojiPopup = form.querySelector('.emoji-popup');
-      const cameraToggle = form.querySelector('.camera-toggle');
-      const fileInput = form.querySelector('.comment-file');
-      const fileIndicator = form.querySelector('.file-indicator');
-
-      emojiToggle.addEventListener('click', () => {
-        emojiPopup.classList.toggle('open');
-      });
-      emojiPopup.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          form.body.value += btn.dataset.emoji;
-          form.body.focus();
-          emojiPopup.classList.remove('open');
+      wireComposer(form, 'Post', async (body, image_url) => {
+        const { error } = await sb.from('comments').insert({
+          review_id: form.dataset.id, author: profile.display_name, user_id: session.user.id, body, image_url
         });
-      });
-      cameraToggle.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', () => {
-        fileIndicator.textContent = fileInput.files[0] ? '📎 ' + fileInput.files[0].name : '';
-      });
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = form.dataset.id;
-        const body = form.body.value.trim();
-        const imageFile = form.image.files[0];
-        if(!body && !imageFile) return;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        let image_url = null;
-        if(imageFile){
-          submitBtn.textContent = 'Uploading…';
-          const path = crypto.randomUUID() + '-' + imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
-          const { error: uploadError } = await sb.storage.from('comment-images').upload(path, imageFile);
-          if(uploadError){
-            alert('Image upload failed: ' + uploadError.message);
-            submitBtn.textContent = 'Post comment';
-            return;
-          }
-          image_url = sb.storage.from('comment-images').getPublicUrl(path).data.publicUrl;
-        }
-        await sb.from('comments').insert({ review_id: id, author: profile.display_name, user_id: session.user.id, body, image_url });
+        if(error){ showToast("Couldn't post your comment: " + error.message, true); return false; }
+        showToast('Comment posted');
         loadAll();
+        return true;
       });
     });
 
@@ -625,8 +710,21 @@
     document.getElementById('lightbox').classList.remove('open');
   });
 
-  initAuth();
-  loadAll();
+  document.addEventListener('click', (e) => {
+    if(e.target.closest('.emoji-popup, .emoji-toggle')) return;
+    document.querySelectorAll('.emoji-popup.open').forEach(p => p.classList.remove('open'));
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape') return;
+    document.getElementById('lightbox').classList.remove('open');
+    document.querySelectorAll('.emoji-popup.open').forEach(p => p.classList.remove('open'));
+  });
+
+  (async () => {
+    await initAuth();
+    await loadAll();
+    document.getElementById('entries').removeAttribute('aria-busy');
+  })();
 </script>
 
 </body>
