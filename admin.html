@@ -45,15 +45,21 @@
 
 <div id="app">
   <button onclick="logout()" style="float:right;background:#eee;color:#1C1B19;border:1px solid #ccc;border-radius:4px;">Log out</button>
-  <h1>Add a review</h1>
+  <h1 id="form-heading">Add a review</h1>
+  <select id="category" onchange="updateFormForCategory()">
+    <optgroup label="Reviews">
+      <option value="film">Film</option>
+      <option value="tv">TV Show</option>
+      <option value="game">Game</option>
+      <option value="music">Music</option>
+    </optgroup>
+    <optgroup label="Other">
+      <option value="announcement">Announcement</option>
+      <option value="post">Post</option>
+    </optgroup>
+  </select>
   <input id="title" placeholder="Title (e.g. Past Lives)">
   <input id="subject" placeholder="Subject line (e.g. Directed by Celine Song, 2023)">
-  <select id="category">
-    <option value="film">Film</option>
-    <option value="tv">TV Show</option>
-    <option value="game">Game</option>
-    <option value="music">Music</option>
-  </select>
   <select id="rating">
     <option value="5">5 stars</option>
     <option value="4.5">4.5 stars</option>
@@ -68,7 +74,7 @@
   <textarea id="body" placeholder="Your review"></textarea>
   <label style="font-size:0.85rem;display:block;margin-bottom:4px;">Cover image (optional)</label>
   <input id="image" type="file" accept="image/*">
-  <button onclick="submitReview()">Publish review</button>
+  <button onclick="submitReview()">Publish</button>
   <div id="status"></div>
 
   <h1 style="margin-top:40px;">Manage reviews</h1>
@@ -226,17 +232,36 @@
     }
   }
 
+  const NON_REVIEW = ['announcement', 'post'];
+  const FORM_COPY = {
+    review:       { heading: 'Add a review',        title: 'Title (e.g. Past Lives)',               subject: 'Subject line (e.g. Directed by Celine Song, 2023)', body: 'Your review' },
+    announcement: { heading: 'Add an announcement', title: 'Title (e.g. October giveaway!)',        subject: 'Optional detail (e.g. Ends October 31)',           body: 'Your announcement' },
+    post:         { heading: 'Add a post',          title: 'Title (e.g. What should I review next?)', subject: 'Optional subtitle',                               body: 'What\'s on your mind?' }
+  };
+
+  function updateFormForCategory(){
+    const category = document.getElementById('category').value;
+    const key = NON_REVIEW.includes(category) ? category : 'review';
+    const copy = FORM_COPY[key];
+    document.getElementById('form-heading').textContent = copy.heading;
+    document.getElementById('title').placeholder = copy.title;
+    document.getElementById('subject').placeholder = copy.subject;
+    document.getElementById('body').placeholder = copy.body;
+    document.getElementById('rating').hidden = key !== 'review';
+  }
+
   async function submitReview(){
     const title = document.getElementById('title').value.trim();
     const subject = document.getElementById('subject').value.trim();
     const category = document.getElementById('category').value;
-    const rating = parseFloat(document.getElementById('rating').value);
+    const isReview = !NON_REVIEW.includes(category);
+    const rating = isReview ? parseFloat(document.getElementById('rating').value) : null;
     const body = document.getElementById('body').value.trim();
     const imageFile = document.getElementById('image').files[0];
     const status = document.getElementById('status');
 
     if(!title || !body){
-      status.textContent = "Title and review text are required.";
+      status.textContent = "Title and text are required.";
       return;
     }
 

@@ -26,7 +26,7 @@
   .entry:last-child{border-bottom:none;}
   .entry-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:0.8rem;color:var(--ink-soft);}
   .tag{font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:2px;color:#fff;}
-  .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);} .tag.tv{background:var(--tv);}
+  .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);} .tag.tv{background:var(--tv);} .tag.announcement{background:var(--ink);} .tag.post{background:#4A6680;}
   .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.5rem;margin:0 0 4px;}
   .subject{font-size:0.88rem;color:var(--ink-soft);margin-bottom:10px;}
   .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;margin-bottom:10px;line-height:1;}
@@ -37,7 +37,7 @@
   .like-btn{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:1px solid var(--rule);border-radius:20px;padding:5px 14px;cursor:pointer;color:var(--ink);}
   .like-btn.liked{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   [hidden]{display:none !important;}
-  .comments{margin-top:4px;}
+  .comments{clear:both;margin-top:4px;padding-top:14px;border-top:1px solid var(--rule);}
   .comment{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:0.88rem;}
   .comment.reply{padding:6px 0 0;}
   .avatar{flex:none;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:600;font-size:0.85rem;display:flex;align-items:center;justify-content:center;user-select:none;}
@@ -139,7 +139,7 @@
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { storageKey: 'sb-public-auth' }
   });
-  const CATS = { film: "Film", tv: "TV", game: "Game", music: "Music" };
+  const CATS = { film: "Film", tv: "TV", game: "Game", music: "Music", announcement: "Announcement", post: "Post" };
   let ALL_REVIEWS = [];
   let currentFilter = 'all';
 
@@ -584,7 +584,7 @@
           </div>` : ''}
         <h2>${r.title}</h2>
         <div class="subject">${r.subject || ''}</div>
-        <div class="stars">${stars(r.rating)}</div>
+        ${r.rating != null ? `<div class="stars">${stars(r.rating)}</div>` : ''}
         <p class="body">${r.body}</p>
         <div class="actions">
           <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="Like"><span class="heart">❤️</span> ${r.likeCount}</button>
