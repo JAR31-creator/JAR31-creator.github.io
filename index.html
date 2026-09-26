@@ -21,7 +21,7 @@
     --paper:#FAF8F4; --ink:#1C1B19; --ink-soft:#5A5751; --rule:#DEDACF;
     --surface:#FFFFFF; --bubble:#EFEBE2; --tint:#F1EDE3;
     --nav-bg:rgba(250,248,244,0.92); --shadow:rgba(28,27,25,0.15);
-    --sk-a:#ECE8DF; --sk-b:#F4F1EA;
+    --sk-a:#ECE8DF; --sk-b:#F4F1EA; --fresh:#F3E3B5;
     --film:#2F6F6E; --game:#B3452F; --music:#6B4E8E; --tv:#B08B1E;
   }
   @media (prefers-color-scheme: dark){
@@ -30,7 +30,7 @@
       --paper:#181715; --ink:#ECE7DD; --ink-soft:#A8A298; --rule:#37342F;
       --surface:#22211E; --bubble:#2C2A26; --tint:#25231F;
       --nav-bg:rgba(24,23,21,0.9); --shadow:rgba(0,0,0,0.45);
-      --sk-a:#262420; --sk-b:#302D29;
+      --sk-a:#262420; --sk-b:#302D29; --fresh:#4A3F22;
     }
   }
   :root[data-theme="dark"]{
@@ -38,7 +38,7 @@
     --paper:#181715; --ink:#ECE7DD; --ink-soft:#A8A298; --rule:#37342F;
     --surface:#22211E; --bubble:#2C2A26; --tint:#25231F;
     --nav-bg:rgba(24,23,21,0.9); --shadow:rgba(0,0,0,0.45);
-    --sk-a:#262420; --sk-b:#302D29;
+    --sk-a:#262420; --sk-b:#302D29; --fresh:#4A3F22;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--paper);transition:background-color .2s, color .2s;color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
@@ -71,6 +71,8 @@
   .comment.reply .avatar{width:26px;height:26px;font-size:0.72rem;}
   .comment-main{flex:1;min-width:0;}
   .bubble{display:inline-block;max-width:100%;background:var(--bubble);border-radius:16px;padding:7px 13px;overflow-wrap:anywhere;}
+  .bubble.fresh{animation:fresh 2.6s ease-out;}
+  @keyframes fresh{0%,35%{background:var(--fresh);}100%{background:var(--bubble);}}
   .bubble .who{display:block;font-weight:600;font-size:0.8rem;}
   .comment .comment-img{display:block;max-width:220px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:12px;margin:6px 0 2px;background:var(--surface);cursor:zoom-in;}
   .comment-actions{display:flex;gap:14px;align-items:center;margin:4px 0 0 12px;font-size:0.76rem;color:var(--ink-soft);}
@@ -358,11 +360,16 @@
     renderAuthBar(); render(currentFilter);
   }
 
+  let loadSeq = 0;
   async function loadAll(){
-    const { data: reviews } = await sb.from('reviews').select('*').order('created_at', {ascending:false});
-    const { data: comments } = await sb.from('comments').select('*').order('created_at', {ascending:true});
-    const { data: likes } = await sb.from('likes').select('review_id, type');
-    const { data: commentLikes } = await sb.from('comment_likes').select('comment_id, user_id');
+    const seq = ++loadSeq;
+    const [{ data: reviews }, { data: comments }, { data: likes }, { data: commentLikes }] = await Promise.all([
+      sb.from('reviews').select('*').order('created_at', {ascending:false}),
+      sb.from('comments').select('*').order('created_at', {ascending:true}),
+      sb.from('likes').select('review_id, type'),
+      sb.from('comment_likes').select('comment_id, user_id')
+    ]);
+    if(seq !== loadSeq) return; // a newer refresh already started; drop this stale one
 
     ALL_REVIEWS = (reviews || []).map(r => ({
       ...r,
@@ -481,7 +488,7 @@
     textarea.style.height = Math.min(textarea.scrollHeight + 2, 220) + 'px';
   }
 
-  function toggleEditForm(commentId, currentBody, wrapper){
+  function toggleEditForm(commentId, currentBody, wrapper, focus = true){
     const bubble = wrapper.querySelector('.bubble');
     const existing = bubble.nextElementSibling;
     if(existing && existing.classList.contains('edit-form')){
@@ -506,13 +513,14 @@
       if(!newBody) return;
       const { error } = await sb.from('comments').update({ body: newBody }).eq('id', commentId);
       if(error){ showToast("Couldn't save your edit: " + error.message, true); return; }
+      close();
       showToast('Comment updated');
       loadAll();
     });
     bubble.hidden = true;
     bubble.after(form);
     autoGrow(textarea);
-    textarea.focus();
+    if(focus) textarea.focus();
   }
 
   // Shared markup for the main comment box and reply boxes
@@ -534,7 +542,7 @@
   }
 
   // Shared behavior: emoji picker, photo attach, auto-grow, upload, then save(body, image_url)
-  function wireComposer(form, submitLabel, save){
+  function wireComposer(form, submitLabel, save, afterSuccess){
     const textarea = form.querySelector('textarea');
     const popup = form.querySelector('.emoji-popup');
     const fileInput = form.querySelector('.comment-file');
@@ -574,6 +582,7 @@
       const body = textarea.value.trim();
       const imageFile = fileInput.files[0];
       if(!body && !imageFile) return;
+      form.dataset.busy = '1'; // live refreshes leave this form's text alone while it's sending
       submitBtn.disabled = true;
       submitBtn.textContent = imageFile ? 'Uploading…' : 'Posting…';
       let image_url = null;
@@ -582,6 +591,7 @@
         const { error: uploadError } = await sb.storage.from('comment-images').upload(path, imageFile);
         if(uploadError){
           showToast("Couldn't upload the image: " + uploadError.message, true);
+          delete form.dataset.busy;
           submitBtn.textContent = submitLabel;
           refresh();
           return;
@@ -589,11 +599,20 @@
         image_url = sb.storage.from('comment-images').getPublicUrl(path).data.publicUrl;
       }
       const ok = await save(body, image_url);
-      if(!ok){ submitBtn.textContent = submitLabel; refresh(); }
+      delete form.dataset.busy;
+      if(!ok){ submitBtn.textContent = submitLabel; refresh(); return; }
+      textarea.value = '';
+      fileInput.value = '';
+      indicator.innerHTML = '';
+      autoGrow(textarea);
+      submitBtn.textContent = submitLabel;
+      refresh();
+      if(afterSuccess) afterSuccess();
+      loadAll();
     });
   }
 
-  function toggleReplyForm(parentId, reviewId, container){
+  function toggleReplyForm(parentId, reviewId, container, focus = true){
     const existing = container.querySelector('.reply-form');
     if(existing){ existing.remove(); return; }
     const form = document.createElement('form');
@@ -607,11 +626,10 @@
       if(error){ showToast("Couldn't post your reply: " + error.message, true); return false; }
       expandedThreads.add(parentId);
       showToast('Reply posted');
-      loadAll();
       return true;
-    });
+    }, () => form.remove());
     container.appendChild(form);
-    form.querySelector('textarea').focus();
+    if(focus) form.querySelector('textarea').focus();
   }
 
   // Returns true if a like/dislike was added, false if removed or failed
@@ -641,9 +659,97 @@
     loadAll();
   }
 
+  // ---------- Keep what the visitor is doing intact across live refreshes ----------
+  function captureUIState(container){
+    const state = { drafts:{}, replies:{}, edits:{}, focus:null, anchor:null };
+    container.querySelectorAll('.comment-form:not([data-busy])').forEach(f => {
+      const text = f.querySelector('textarea').value;
+      const file = f.querySelector('.comment-file').files[0];
+      if(text || file) state.drafts[f.dataset.id] = { text, file };
+    });
+    container.querySelectorAll('.reply-form:not([data-busy])').forEach(f => {
+      state.replies[f.closest('.comment').dataset.id] = {
+        text: f.querySelector('textarea').value, file: f.querySelector('.comment-file').files[0]
+      };
+    });
+    container.querySelectorAll('.edit-form').forEach(f => {
+      state.edits[f.closest('.comment').dataset.id] = { text: f.querySelector('textarea').value };
+    });
+    const active = document.activeElement;
+    if(active && active.tagName === 'TEXTAREA' && container.contains(active)){
+      const form = active.closest('form');
+      const kind = form.classList.contains('comment-form') ? 'drafts' : form.classList.contains('reply-form') ? 'replies' : 'edits';
+      const key = kind === 'drafts' ? form.dataset.id : form.closest('.comment').dataset.id;
+      state.focus = { kind, key, start: active.selectionStart, end: active.selectionEnd };
+    }
+    // Remember the first thing visible on screen so new content above it doesn't shove the page around
+    for(const el of container.querySelectorAll('.entry, .comment')){
+      const r = el.getBoundingClientRect();
+      if(r.height > 0 && r.bottom > 0){
+        state.anchor = { selector: `.${el.classList.contains('entry') ? 'entry' : 'comment'}[data-id="${el.dataset.id}"]`, top: r.top };
+        if(r.top >= 0) break;
+      }
+    }
+    return state;
+  }
+
+  function restoreUIState(container, state){
+    const textareas = { drafts:{}, replies:{}, edits:{} };
+    const fill = (form, saved) => {
+      const ta = form.querySelector('textarea');
+      ta.value = saved.text;
+      ta.dispatchEvent(new Event('input'));
+      const fileInput = form.querySelector('.comment-file');
+      if(fileInput && saved.file){
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(saved.file);
+          fileInput.files = dt.files;
+          fileInput.dispatchEvent(new Event('change'));
+        } catch(e) {}
+      }
+      return ta;
+    };
+    for(const [id, saved] of Object.entries(state.drafts)){
+      const f = container.querySelector(`.comment-form[data-id="${id}"]`);
+      if(f) textareas.drafts[id] = fill(f, saved);
+    }
+    for(const [parentId, saved] of Object.entries(state.replies)){
+      const c = container.querySelector(`.comment[data-id="${parentId}"]`);
+      const replyBtn = c && c.querySelector('.reply-btn');
+      if(!replyBtn) continue;
+      toggleReplyForm(parentId, replyBtn.dataset.review, c.querySelector('.reply-form-container'), false);
+      textareas.replies[parentId] = fill(c.querySelector('.reply-form'), saved);
+    }
+    for(const [id, saved] of Object.entries(state.edits)){
+      const c = container.querySelector(`.comment[data-id="${id}"]`);
+      const found = findCommentById(id);
+      if(!c || !found) continue;
+      toggleEditForm(id, found.body, c, false);
+      textareas.edits[id] = fill(c.querySelector('.edit-form'), saved);
+    }
+    if(state.anchor){
+      const el = container.querySelector(state.anchor.selector);
+      if(el){
+        const shift = el.getBoundingClientRect().top - state.anchor.top;
+        if(Math.abs(shift) > 1) window.scrollBy(0, shift);
+      }
+    }
+    if(state.focus){
+      const ta = textareas[state.focus.kind][state.focus.key];
+      if(ta){
+        ta.focus({ preventScroll: true });
+        try { ta.setSelectionRange(state.focus.start, state.focus.end); } catch(e) {}
+      }
+    }
+  }
+
+  let knownCommentIds = null; // comments already seen, so brand-new ones can get a brief highlight
+
   function render(filter){
     const list = filter === 'all' ? ALL_REVIEWS : ALL_REVIEWS.filter(r => r.category === filter);
     const container = document.getElementById('entries');
+    const uiState = captureUIState(container);
     if(list.length === 0){
       container.innerHTML = "<div class='empty-state'>No entries in this category yet.</div>";
       return;
@@ -764,7 +870,6 @@
         });
         if(error){ showToast("Couldn't post your comment: " + error.message, true); return false; }
         showToast('Comment posted');
-        loadAll();
         return true;
       });
     });
@@ -772,6 +877,17 @@
     container.querySelectorAll('.comment-img').forEach(img => {
       img.addEventListener('click', () => openLightbox(img.src));
     });
+
+    const allIds = ALL_REVIEWS.flatMap(r => r.comments.map(c => c.id));
+    if(knownCommentIds){
+      allIds.filter(id => !knownCommentIds.has(id)).forEach(id => {
+        const bubble = container.querySelector(`.comment[data-id="${id}"] .bubble`);
+        if(bubble) bubble.classList.add('fresh');
+      });
+    }
+    knownCommentIds = new Set(allIds);
+
+    restoreUIState(container, uiState);
   }
 
   function openLightbox(src){
@@ -836,10 +952,33 @@
     document.querySelectorAll('.emoji-popup.open').forEach(p => p.classList.remove('open'));
   });
 
+  // ---------- Live updates ----------
+  let refreshTimer = null;
+  function scheduleRefresh(){
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(loadAll, 500); // bundles bursts of changes into one refresh
+  }
+  function startLiveUpdates(){
+    const channel = sb.channel('site-activity');
+    ['reviews', 'comments', 'likes', 'comment_likes'].forEach(table => {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleRefresh);
+    });
+    channel.subscribe();
+  }
+  // Catch up after a phone was locked or the tab sat in the background
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible') scheduleRefresh();
+  });
+  // Keep "5m" / "2h" timestamps current without a full refresh
+  setInterval(() => {
+    document.querySelectorAll('.comment-actions time').forEach(t => { t.textContent = timeAgo(t.getAttribute('datetime')); });
+  }, 60000);
+
   (async () => {
     await initAuth();
     await loadAll();
     document.getElementById('entries').removeAttribute('aria-busy');
+    startLiveUpdates();
   })();
 </script>
 
