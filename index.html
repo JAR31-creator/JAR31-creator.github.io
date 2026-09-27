@@ -78,6 +78,8 @@
   .bubble.fresh{animation:fresh 2.6s ease-out;}
   @keyframes fresh{0%,35%{background:var(--fresh);}100%{background:var(--bubble);}}
   .bubble .who{display:block;font-weight:600;font-size:0.8rem;}
+  .owner-badge{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px 1px 5px;border-radius:9px;background:var(--ink);color:var(--paper);font-size:0.66rem;font-weight:600;vertical-align:1px;}
+  .owner-badge svg{width:10px;height:10px;}
   .comment .comment-img{display:block;max-width:220px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:12px;margin:6px 0 2px;background:var(--surface);cursor:zoom-in;}
   .comment-actions{display:flex;gap:14px;align-items:center;margin:4px 0 0 12px;font-size:0.76rem;color:var(--ink-soft);}
   .comment-actions time{cursor:default;}
@@ -114,10 +116,8 @@
   .gif-msg{column-span:all;font-size:0.8rem;color:var(--ink-soft);text-align:center;padding:40px 12px;margin:0;}
   .gif-attrib{font-size:0.7rem;color:var(--ink-soft);text-align:right;padding-right:4px;}
   .gif-thumb{height:30px;width:auto;border-radius:4px;vertical-align:middle;margin-right:8px;}
-  .emoji-popup{position:absolute;bottom:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:6px;display:none;gap:2px;box-shadow:0 6px 18px var(--shadow);z-index:5;}
-  .emoji-popup.open{display:flex;animation:rise .14s ease-out;}
-  .emoji-popup button{background:none;border:none;font-size:1.2rem;cursor:pointer;padding:3px 5px;border-radius:8px;transition:transform .1s;}
-  .emoji-popup button:hover{background:var(--tint);transform:scale(1.15);}
+  .emoji-popup{position:absolute;bottom:calc(100% + 6px);right:0;width:min(340px, calc(100vw - 40px));background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:0;overflow:hidden;display:none;box-shadow:0 6px 18px var(--shadow);z-index:6;}
+  .emoji-popup.open{display:block;animation:rise .14s ease-out;}
   .file-indicator{font-size:0.76rem;color:var(--ink-soft);padding-left:12px;}
   .file-indicator:empty{display:none;}
   .remove-file{background:none;border:none;padding:0;margin-left:6px;font:inherit;color:var(--game);text-decoration:underline;cursor:pointer;}
@@ -198,6 +198,65 @@
     #auth-forms form > div input{flex:1;min-width:0;}
     .emoji-popup, .gif-popup{right:-4px;}
   }
+  emoji-picker{display:block;width:100%;height:360px;--background:var(--surface);--border-size:0;--border-color:transparent;--indicator-color:var(--ink);--input-border-color:var(--rule);--input-font-color:var(--ink);--input-placeholder-color:var(--ink-soft);--input-border-radius:18px;--input-padding:0.4rem 0.8rem;--category-font-color:var(--ink-soft);--button-hover-background:var(--tint);--button-active-background:var(--bubble);--outline-color:var(--ink);--num-columns:8;--emoji-size:1.35rem;}
+  .avatar svg{width:62%;height:62%;display:block;}
+  .avatar.mini{width:24px;height:24px;font-size:0.7rem;}
+  .avatar.big{width:46px;height:46px;font-size:1.15rem;}
+  #authbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  #auth-dialog{padding:0;border:none;border-radius:14px;background:var(--paper);color:var(--ink);width:min(460px, calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.28);}
+  #auth-dialog::backdrop{background:rgba(20,19,17,.55);}
+  #auth-dialog[open]{animation:rise .18s ease-out;}
+  .dlg{position:relative;padding:28px 28px 22px;}
+  .dlg h2{font-family:'Newsreader',serif;font-weight:600;font-size:1.6rem;margin:0 0 4px;outline:none;}
+  .dlg-sub{margin:0 0 18px;color:var(--ink-soft);font-size:0.9rem;}
+  .dlg-close{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:8px;border-radius:50%;display:flex;}
+  .dlg-close:hover{background:var(--tint);color:var(--ink);}
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;font-size:0.8rem;font-weight:600;}
+  .field input{font-family:inherit;font-size:0.92rem;font-weight:400;padding:9px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;min-width:0;}
+  .field input:focus{outline:none;border-color:var(--ink-soft);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .pw-wrap{position:relative;display:block;}
+  .pw-wrap input{padding-right:62px;}
+  .pw-show{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;font-family:inherit;font-size:0.75rem;font-weight:600;color:var(--ink-soft);cursor:pointer;padding:4px 6px;}
+  .pw-show:active:not(:disabled){transform:translateY(-50%) scale(0.96);}
+  .pw-meter{margin:-4px 0 14px;font-size:0.78rem;}
+  .pw-bars{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px;}
+  .pw-bars i{height:5px;border-radius:3px;background:var(--rule);transition:background-color .2s;}
+  .pw-label{font-weight:600;margin-bottom:4px;}
+  .pw-label:empty{display:none;}
+  .pw-checks{list-style:none;padding:0;margin:0 0 4px;display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;color:var(--ink-soft);}
+  .pw-checks li::before{content:'\25CB';display:inline-block;width:1.1em;}
+  .pw-checks li.ok{color:var(--ink);}
+  .pw-checks li.ok::before{content:'\2713';color:var(--film);font-weight:700;}
+  .pw-tip{color:var(--ink-soft);}
+  .pw-match{font-size:0.78rem;margin:-6px 0 12px;}
+  .pw-match:empty{display:none;}
+  .pw-match.ok{color:var(--film);} .pw-match.bad{color:var(--game);}
+  .avatar-picker{border:none;padding:0;margin:6px 0 14px;min-width:0;}
+  .avatar-picker legend{font-size:0.8rem;font-weight:600;padding:0;margin-bottom:10px;}
+  .avatar-picker legend span{font-weight:400;color:var(--ink-soft);}
+  .avatar-options, .color-options{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .avatar-choice, .color-choice{position:relative;cursor:pointer;display:block;border-radius:50%;}
+  .avatar-choice input, .color-choice input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;}
+  .color-choice span[aria-hidden]{display:block;width:26px;height:26px;border-radius:50%;}
+  .avatar-choice input:checked + .avatar, .color-choice input:checked + span{box-shadow:0 0 0 2px var(--paper), 0 0 0 4px var(--ink);}
+  .avatar-choice input:focus-visible + .avatar, .color-choice input:focus-visible + span{outline:2px solid var(--ink);outline-offset:5px;}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  #turnstile-auth-container{margin:2px 0 8px;}
+  #auth-status{font-size:0.82rem;color:var(--game);margin:6px 0;}
+  #auth-status.ok{color:var(--film);}
+  #auth-status:empty{display:none;}
+  .dlg-primary{display:block;width:100%;font-family:inherit;font-size:0.95rem;font-weight:600;background:var(--ink);color:var(--paper);border:none;border-radius:22px;padding:11px 16px;cursor:pointer;margin-top:4px;}
+  .dlg-primary:disabled{opacity:.5;cursor:default;}
+  .dlg-switch{text-align:center;font-size:0.85rem;color:var(--ink-soft);margin:14px 0 0;}
+  .dlg-switch button, .dlg-link{background:none;border:none;padding:0;font-family:inherit;font-size:0.85rem;color:var(--ink);text-decoration:underline;cursor:pointer;}
+  .dlg-link{display:block;margin:12px auto 0;}
+  .dlg-later{display:block;margin:10px auto 0;background:none;border:none;font-family:inherit;font-size:0.85rem;color:var(--ink-soft);cursor:pointer;}
+  @media (max-width: 560px){
+    emoji-picker{--num-columns:7;--input-font-size:16px;height:320px;}
+    .dlg{padding:24px 18px 18px;}
+    .field-row{grid-template-columns:1fr;gap:0;}
+  }
 </style>
 </head>
 <body>
@@ -228,10 +287,22 @@
 <div id="lightbox"><img id="lightbox-img" src="" alt="Full size image"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<dialog id="auth-dialog" aria-labelledby="auth-title">
+  <div class="dlg">
+    <div id="auth-dialog-body"></div>
+    <button type="button" class="dlg-close" aria-label="Close">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
+    </button>
+  </div>
+</dialog>
+
 <script>
   // ---- Fill these in from Project Settings -> API ----
   const SUPABASE_URL = "https://lzktxoizovfjgkxkpbhw.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a3R4b2l6b3ZmamdreGtwYmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMDA3MDYsImV4cCI6MjEwNTg3NjcwNn0.NUWMnrx3XGoaDjQQovP5R100CDQL4Bk4Bix7kr52fJY";
+  // Your admin account's User UID. Comments from this account get the "Author" badge,
+  // and when you're logged in with it you can delete any comment.
+  const OWNER_ID = "225bff99-f444-4fa4-a16e-1060a2eeb201";
 
   // ---- GIF search, powered by KLIPY. The GIF button stays hidden until a real key is pasted here. ----
   const KLIPY_API_KEY = "gGshsjNkMlXl5WGZlYR7eknNdNDJWvyo1MJUychCALHicK5kZFsjCkYeNgDYHqr2";
@@ -267,12 +338,394 @@
   const TURNSTILE_SITE_KEY = "0x4AAAAAAFDVvbmopL_cQoNQ";
   let turnstileToken = null;
   let turnstileWidgetId = null;
+  const AUTH_PROMPT_DELAY_MS = 3 * 60 * 1000; // how long a logged-out visitor browses before the sign-up prompt appears
+
+  // ---------- Profile pictures ----------
+  const AVATAR_COLOR_CHOICES = {
+    red:    { label: 'Red',    bg: '#D64541', fg: '#FFFFFF' },
+    blue:   { label: 'Blue',   bg: '#2F6DB5', fg: '#FFFFFF' },
+    green:  { label: 'Green',  bg: '#2E8B57', fg: '#FFFFFF' },
+    pink:   { label: 'Pink',   bg: '#D9558F', fg: '#FFFFFF' },
+    purple: { label: 'Purple', bg: '#7B57B0', fg: '#FFFFFF' },
+    orange: { label: 'Orange', bg: '#E4772E', fg: '#FFFFFF' },
+    yellow: { label: 'Yellow', bg: '#EDC23A', fg: '#3A2E05' }
+  };
+  const AVATAR_ICONS = {
+    popcorn: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="9" r="2.7"/><circle cx="12" cy="7.4" r="3"/><circle cx="16" cy="9" r="2.7"/><circle cx="10" cy="5.2" r="2.3"/><circle cx="14" cy="5.2" r="2.3"/><path d="M5.6 10.5h12.8l-1.7 10a1.2 1.2 0 0 1-1.2 1H8.5a1.2 1.2 0 0 1-1.2-1z"/><path d="M9.7 11.2l.5 9.4M14.3 11.2l-.5 9.4" style="stroke:var(--avbg)" stroke-width="1.3" fill="none"/></svg>`,
+    controller: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.2 7.5h9.6a4.6 4.6 0 0 1 4.4 5.9l-1 3.5a2.3 2.3 0 0 1-3.9.9L14.6 16H9.4l-1.7 1.8a2.3 2.3 0 0 1-3.9-.9l-1-3.5a4.6 4.6 0 0 1 4.4-5.9z"/><path d="M6.4 10.4h3.4M8.1 8.7v3.4" style="stroke:var(--avbg)" stroke-width="1.4" stroke-linecap="round" fill="none"/><circle cx="15.6" cy="10" r="0.95" style="fill:var(--avbg)"/><circle cx="17.5" cy="11.8" r="0.95" style="fill:var(--avbg)"/></svg>`,
+    headphones: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.2 14.5V12a7.8 7.8 0 0 1 15.6 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="2.8" y="13" width="5.4" height="8" rx="2.2"/><rect x="15.8" y="13" width="5.4" height="8" rx="2.2"/></svg>`,
+    clapper: `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.2" y="10.2" width="17.6" height="10.6" rx="1.6"/><path d="M2.9 8.7 19.4 4.3l.9 3.3L3.8 12z"/><path d="M7.4 7.5l2.1 2.8M11.4 6.4l2.1 2.8M15.4 5.3l2.1 2.8" style="stroke:var(--avbg)" stroke-width="1.5" fill="none"/></svg>`
+  };
+  const AVATAR_ICON_CHOICES = [['', 'Your initial'], ['popcorn', 'Popcorn'], ['controller', 'Game controller'], ['headphones', 'Headphones'], ['clapper', 'Movie clapperboard']];
+  const PROFILES = new Map(); // user id -> { avatar_icon, avatar_color }
+
+  function initialOf(name){ return Array.from((name || '').trim() || '?')[0].toUpperCase(); }
+
+  function avatarHTML(name, icon, color, extraClass = ''){
+    const n = (name || '?').trim() || '?';
+    let bg, fg = '#FFFFFF';
+    const choice = AVATAR_COLOR_CHOICES[color];
+    if(choice){ bg = choice.bg; fg = choice.fg; }
+    else {
+      let h = 0;
+      for(const ch of n) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+      bg = AVATAR_COLORS[h % AVATAR_COLORS.length]; // people who haven't picked a color keep their original one
+    }
+    const inner = AVATAR_ICONS[icon] || escapeHtml(initialOf(n));
+    return `<div class="avatar ${extraClass}" style="background:${bg};color:${fg};--avbg:${bg}" aria-hidden="true">${inner}</div>`;
+  }
+
+  function avatarPickerHTML(icon, color){
+    return `
+      <fieldset class="avatar-picker">
+        <legend>Profile picture <span>(optional)</span></legend>
+        <div class="avatar-options">
+          ${AVATAR_ICON_CHOICES.map(([key, label]) => `
+            <label class="avatar-choice" title="${label}">
+              <input type="radio" name="avatar-icon" value="${key}" ${key === icon ? 'checked' : ''}>
+              <span class="avatar big" aria-hidden="true"></span><span class="sr-only">${label}</span>
+            </label>`).join('')}
+        </div>
+        <div class="color-options">
+          ${Object.entries(AVATAR_COLOR_CHOICES).map(([key, c]) => `
+            <label class="color-choice" title="${c.label}">
+              <input type="radio" name="avatar-color" value="${key}" ${key === color ? 'checked' : ''}>
+              <span style="background:${c.bg}" aria-hidden="true"></span><span class="sr-only">${c.label}</span>
+            </label>`).join('')}
+        </div>
+      </fieldset>`;
+  }
+
+  function wireAvatarPicker(root, getName){
+    const current = () => ({
+      icon: root.querySelector('input[name="avatar-icon"]:checked')?.value || '',
+      color: root.querySelector('input[name="avatar-color"]:checked')?.value || 'blue'
+    });
+    const update = () => {
+      const c = AVATAR_COLOR_CHOICES[current().color];
+      root.querySelectorAll('.avatar-choice').forEach(label => {
+        const av = label.querySelector('.avatar');
+        av.style.background = c.bg;
+        av.style.color = c.fg;
+        av.style.setProperty('--avbg', c.bg);
+        av.innerHTML = AVATAR_ICONS[label.querySelector('input').value] || escapeHtml(initialOf(getName()));
+      });
+    };
+    root.querySelectorAll('input[name="avatar-icon"], input[name="avatar-color"]').forEach(i => i.addEventListener('change', update));
+    update();
+    return { update, current };
+  }
+
+  // ---------- Password strength ----------
+  function passwordStrength(pw, first, last, email){
+    const checks = [
+      { ok: pw.length >= 8, label: '8+ characters' },
+      { ok: /[a-z]/.test(pw) && /[A-Z]/.test(pw), label: 'Upper & lowercase' },
+      { ok: /\d/.test(pw), label: 'A number' },
+      { ok: /[^A-Za-z0-9]/.test(pw), label: 'A symbol (! # ?)' }
+    ];
+    const lower = pw.toLowerCase();
+    const personal = [first, last, (email || '').split('@')[0]]
+      .filter(x => x && x.trim().length >= 3)
+      .some(x => lower.includes(x.trim().toLowerCase()));
+    const common = /^(password|passw0rd|123456|12345678|qwerty|letmein|welcome|iloveyou|admin|abc123|111111|monkey|dragon)/i.test(pw);
+    let score = checks.filter(c => c.ok).length + (pw.length >= 12 ? 1 : 0);
+    if(pw.length < 8 || personal || common) score = Math.min(score, 1);
+    const level = score <= 1 ? 1 : score === 2 ? 2 : score === 3 ? 3 : 4;
+    const names = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+    const colors = ['', 'var(--game)', '#C98423', '#6E9A3A', 'var(--film)'];
+    let tip;
+    if(common) tip = "That's one of the most common passwords. Try something more unique.";
+    else if(personal) tip = 'Avoid using your name or email in your password.';
+    else if(!checks[0].ok) tip = 'Keep going: use at least 8 characters.';
+    else if(!checks[1].ok) tip = 'Tip: mix in UPPER and lowercase letters.';
+    else if(!checks[2].ok) tip = 'Tip: add a number.';
+    else if(!checks[3].ok) tip = 'Tip: add a symbol like ! # or ?';
+    else if(pw.length < 12) tip = 'Strong! Making it 12+ characters is even better.';
+    else tip = 'Great password.';
+    return { level, name: names[level], color: colors[level], tip, checks };
+  }
+
+  // ---------- Human check (Cloudflare Turnstile) ----------
+  function removeTurnstile(){
+    if(turnstileWidgetId !== null && window.turnstile){ try { turnstile.remove(turnstileWidgetId); } catch(e) {} }
+    turnstileWidgetId = null;
+    turnstileToken = null;
+  }
+  function resetTurnstile(){
+    if(turnstileWidgetId !== null && window.turnstile){ try { turnstile.reset(turnstileWidgetId); } catch(e) {} }
+    turnstileToken = null;
+  }
+  function mountTurnstile(){
+    removeTurnstile();
+    const el = document.getElementById('turnstile-auth-container');
+    if(!el) return;
+    const tryRender = (attempt) => {
+      if(!document.body.contains(el)) return;
+      if(window.turnstile){
+        turnstileWidgetId = turnstile.render(el, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => { turnstileToken = token; },
+          'expired-callback': () => { turnstileToken = null; }
+        });
+      } else if(attempt < 50){
+        setTimeout(() => tryRender(attempt + 1), 200); // the Turnstile script may still be loading
+      }
+    };
+    tryRender(0);
+  }
+
+  // ---------- Sign-up / log-in window ----------
+  const authDialog = document.getElementById('auth-dialog');
+  let authPromptMode = false;
+
+  function markPromptSeen(){ try { sessionStorage.setItem('auth-prompt-seen', '1'); } catch(e) {} }
+
+  function openAuthDialog(mode, opts = {}){
+    authPromptMode = !!opts.prompt;
+    markPromptSeen(); // once they've seen the window this visit, the timed prompt won't appear again
+    renderAuthDialog(mode);
+    if(!authDialog.open) authDialog.showModal();
+    focusDialog();
+  }
+  function focusDialog(){
+    const firstInput = authDialog.querySelector('#auth-dialog-body input:not([type="radio"])');
+    if(firstInput && !authPromptMode && !matchMedia('(pointer: coarse)').matches) firstInput.focus();
+    else authDialog.querySelector('h2')?.focus();
+  }
+  authDialog.querySelector('.dlg-close').addEventListener('click', () => authDialog.close());
+  authDialog.addEventListener('click', (e) => { if(e.target === authDialog) authDialog.close(); }); // click outside the window
+  authDialog.addEventListener('close', removeTurnstile);
+
+  function setStatus(msg, ok){
+    const el = document.getElementById('auth-status');
+    if(!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('ok', !!ok);
+  }
+
+  const showToggle = (id) => `<button type="button" class="pw-show" data-for="${id}" aria-label="Show password">Show</button>`;
+
+  function renderAuthDialog(mode){
+    removeTurnstile();
+    const body = document.getElementById('auth-dialog-body');
+
+    if(mode === 'signup'){
+      body.innerHTML = `
+        <h2 id="auth-title" tabindex="-1">${authPromptMode ? 'Join the conversation' : 'Create your account'}</h2>
+        <p class="dlg-sub">${authPromptMode
+          ? 'Enjoying the reviews? Create a free account to comment, reply, and like other people\u2019s comments.'
+          : 'Comment, reply, and like other people\u2019s comments.'}</p>
+        <form id="auth-form" novalidate>
+          <div class="field-row">
+            <label class="field"><span>First name</span><input id="su-first" autocomplete="given-name" maxlength="40"></label>
+            <label class="field"><span>Last name</span><input id="su-last" autocomplete="family-name" maxlength="40"></label>
+          </div>
+          <label class="field"><span>Email</span><input id="su-email" type="email" autocomplete="email"></label>
+          <label class="field"><span>Password</span>
+            <span class="pw-wrap"><input id="su-pw" type="password" autocomplete="new-password">${showToggle('su-pw')}</span>
+          </label>
+          <div class="pw-meter" aria-live="polite">
+            <div class="pw-bars"><i></i><i></i><i></i><i></i></div>
+            <div class="pw-label"></div>
+            <ul class="pw-checks"></ul>
+            <div class="pw-tip"></div>
+          </div>
+          <label class="field"><span>Confirm password</span>
+            <span class="pw-wrap"><input id="su-pw2" type="password" autocomplete="new-password">${showToggle('su-pw2')}</span>
+          </label>
+          <div class="pw-match" aria-live="polite"></div>
+          ${avatarPickerHTML('', 'blue')}
+          <div id="turnstile-auth-container"></div>
+          <div id="auth-status" role="alert"></div>
+          <button type="submit" class="dlg-primary">Create account</button>
+          <p class="dlg-switch">Already have an account? <button type="button" data-mode="login">Log in</button></p>
+          ${authPromptMode ? '<button type="button" class="dlg-later">Maybe later</button>' : ''}
+        </form>`;
+      wireSignup(body);
+    }
+
+    else if(mode === 'login'){
+      body.innerHTML = `
+        <h2 id="auth-title" tabindex="-1">Welcome back</h2>
+        <p class="dlg-sub">Log in to comment, reply, and like.</p>
+        <form id="auth-form" novalidate>
+          <label class="field"><span>Email</span><input id="li-email" type="email" autocomplete="username"></label>
+          <label class="field"><span>Password</span>
+            <span class="pw-wrap"><input id="li-pw" type="password" autocomplete="current-password">${showToggle('li-pw')}</span>
+          </label>
+          <div id="turnstile-auth-container"></div>
+          <div id="auth-status" role="alert"></div>
+          <button type="submit" class="dlg-primary">Log in</button>
+          <button type="button" class="dlg-link" id="forgot-btn">Forgot password?</button>
+          <p class="dlg-switch">New here? <button type="button" data-mode="signup">Create an account</button></p>
+          ${authPromptMode ? '<button type="button" class="dlg-later">Maybe later</button>' : ''}
+        </form>`;
+      body.querySelector('#auth-form').addEventListener('submit', (e) => { e.preventDefault(); doLogin(); });
+      body.querySelector('#forgot-btn').addEventListener('click', forgotPassword);
+    }
+
+    else if(mode === 'profile'){
+      body.innerHTML = `
+        <h2 id="auth-title" tabindex="-1">Edit profile picture</h2>
+        <p class="dlg-sub">Pick an icon or keep your initial, then choose a color.</p>
+        <form id="auth-form" novalidate>
+          ${avatarPickerHTML(profile?.avatar_icon || '', profile?.avatar_color || 'blue')}
+          <div id="auth-status" role="alert"></div>
+          <button type="submit" class="dlg-primary">Save</button>
+        </form>`;
+      const picker = wireAvatarPicker(body, () => profile?.display_name || '?');
+      body.querySelector('#auth-form').addEventListener('submit', (e) => { e.preventDefault(); saveProfile(picker.current()); });
+    }
+
+    else if(mode === 'check-email'){
+      body.innerHTML = `
+        <h2 id="auth-title" tabindex="-1">Check your email</h2>
+        <p class="dlg-sub">We sent a confirmation link to <strong>${escapeHtml(checkEmailAddress || 'your email')}</strong>. Open it to finish creating your account, then come back and log in.</p>
+        <button type="button" class="dlg-primary" id="got-it">Got it</button>`;
+      body.querySelector('#got-it').addEventListener('click', () => authDialog.close());
+    }
+
+    body.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { renderAuthDialog(b.dataset.mode); focusDialog(); }));
+    body.querySelector('.dlg-later')?.addEventListener('click', () => authDialog.close());
+    body.querySelectorAll('.pw-show').forEach(btn => btn.addEventListener('click', () => {
+      const input = body.querySelector('#' + btn.dataset.for);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? 'Show' : 'Hide';
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    }));
+    if(mode === 'signup' || mode === 'login') mountTurnstile();
+  }
+  let checkEmailAddress = '';
+
+  function wireSignup(body){
+    const $ = (id) => body.querySelector('#' + id);
+    const first = $('su-first'), last = $('su-last'), email = $('su-email'), pw = $('su-pw'), pw2 = $('su-pw2');
+    const bars = body.querySelectorAll('.pw-bars i');
+    const label = body.querySelector('.pw-label');
+    const checksEl = body.querySelector('.pw-checks');
+    const tip = body.querySelector('.pw-tip');
+    const match = body.querySelector('.pw-match');
+    const picker = wireAvatarPicker(body, () => first.value);
+
+    const updateMeter = () => {
+      const s = passwordStrength(pw.value, first.value, last.value, email.value);
+      checksEl.innerHTML = s.checks.map(c => `<li class="${c.ok ? 'ok' : ''}">${c.label}</li>`).join('');
+      if(!pw.value){
+        bars.forEach(b => { b.style.background = ''; });
+        label.textContent = '';
+        tip.textContent = 'Use 8 or more characters with a mix of letters, numbers, and symbols.';
+        return;
+      }
+      bars.forEach((b, i) => { b.style.background = i < s.level ? s.color : ''; });
+      label.textContent = 'Strength: ' + s.name;
+      label.style.color = s.color;
+      tip.textContent = s.tip;
+    };
+    const updateMatch = () => {
+      if(!pw2.value){ match.textContent = ''; match.className = 'pw-match'; return; }
+      const same = pw.value === pw2.value;
+      match.textContent = same ? '\u2713 Passwords match' : "Passwords don't match yet";
+      match.className = 'pw-match ' + (same ? 'ok' : 'bad');
+    };
+    [first, last, email, pw].forEach(i => i.addEventListener('input', updateMeter));
+    [pw, pw2].forEach(i => i.addEventListener('input', updateMatch));
+    first.addEventListener('input', picker.update); // keeps the "initial" option showing their first letter
+    updateMeter();
+
+    body.querySelector('#auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = first.value.trim(), l = last.value.trim(), em = email.value.trim();
+      if(!f || !l) return setStatus('Enter your first and last name.');
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return setStatus('Enter a valid email address.');
+      if(pw.value.length < 8) return setStatus('Your password needs at least 8 characters.');
+      if(pw.value !== pw2.value) return setStatus("Your passwords don't match. Retype the confirmation.");
+      if(!turnstileToken) return setStatus('Complete the verification check above.');
+      const submit = body.querySelector('.dlg-primary');
+      submit.disabled = true;
+      submit.textContent = 'Creating account…';
+      setStatus('');
+      const avatar = picker.current();
+      const { data, error } = await sb.auth.signUp({
+        email: em, password: pw.value,
+        options: {
+          captchaToken: turnstileToken,
+          data: { display_name: `${f} ${l}`, first_name: f, last_name: l, avatar_icon: avatar.icon || null, avatar_color: avatar.color },
+          emailRedirectTo: window.location.origin + '/'
+        }
+      });
+      resetTurnstile();
+      submit.disabled = false;
+      submit.textContent = 'Create account';
+      if(error) return setStatus(error.message);
+      if(!data.session){
+        checkEmailAddress = em;
+        renderAuthDialog('check-email');
+        focusDialog();
+        return;
+      }
+      session = data.session;
+      profile = { display_name: `${f} ${l}`, avatar_icon: avatar.icon || null, avatar_color: avatar.color };
+      PROFILES.set(session.user.id, profile);
+      authDialog.close();
+      showToast(`Welcome, ${f}!`);
+      renderAuthBar(); render(currentFilter);
+    });
+  }
+
+  async function doLogin(){
+    const email = document.getElementById('li-email').value.trim();
+    const password = document.getElementById('li-pw').value;
+    if(!email || !password) return setStatus('Enter your email and password.');
+    if(!turnstileToken) return setStatus('Complete the verification check above.');
+    const submit = authDialog.querySelector('.dlg-primary');
+    submit.disabled = true;
+    submit.textContent = 'Logging in…';
+    const { data, error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken: turnstileToken } });
+    resetTurnstile();
+    submit.disabled = false;
+    submit.textContent = 'Log in';
+    if(error) return setStatus(error.message);
+    session = data.session;
+    const { data: p } = await sb.from('profiles').select('display_name, avatar_icon, avatar_color').eq('id', session.user.id).single();
+    profile = p;
+    authDialog.close();
+    showToast(`Welcome back${p?.display_name ? ', ' + p.display_name.split(' ')[0] : ''}!`);
+    renderAuthBar(); render(currentFilter);
+  }
+
+  async function forgotPassword(){
+    const email = document.getElementById('li-email').value.trim();
+    if(!email) return setStatus('Enter your email above first, then select "Forgot password?" again.');
+    if(!turnstileToken) return setStatus('Complete the verification check above first.');
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html',
+      captchaToken: turnstileToken
+    });
+    resetTurnstile();
+    if(error) setStatus(error.message);
+    else setStatus('Check your email for a password reset link.', true);
+  }
+
+  async function saveProfile({ icon, color }){
+    const submit = authDialog.querySelector('.dlg-primary');
+    submit.disabled = true;
+    const { error } = await sb.from('profiles').update({ avatar_icon: icon || null, avatar_color: color }).eq('id', session.user.id);
+    submit.disabled = false;
+    if(error) return setStatus("Couldn't save your profile picture: " + error.message);
+    profile = { ...profile, avatar_icon: icon || null, avatar_color: color };
+    PROFILES.set(session.user.id, { avatar_icon: profile.avatar_icon, avatar_color: color });
+    authDialog.close();
+    showToast('Profile picture updated');
+    renderAuthBar(); render(currentFilter);
+  }
 
   async function initAuth(){
     const { data } = await sb.auth.getSession();
     session = data.session;
     if(session){
-      const { data: p } = await sb.from('profiles').select('display_name').eq('id', session.user.id).single();
+      const { data: p } = await sb.from('profiles').select('display_name, avatar_icon, avatar_color').eq('id', session.user.id).single();
       profile = p;
     }
     renderAuthBar();
@@ -281,117 +734,47 @@
   function renderAuthBar(){
     const bar = document.getElementById('authbar');
     if(session && profile){
-      bar.innerHTML = `Commenting as <strong>${escapeHtml(profile.display_name)}</strong> · <button id="logout-btn">Log out</button>`;
+      bar.innerHTML = `${avatarHTML(profile.display_name, profile.avatar_icon, profile.avatar_color, 'mini')}
+        <span>Commenting as <strong>${escapeHtml(profile.display_name)}</strong></span>
+        <span aria-hidden="true">·</span><button id="edit-profile-btn">Edit profile</button>
+        <span aria-hidden="true">·</span><button id="logout-btn">Log out</button>`;
+      document.getElementById('edit-profile-btn').onclick = () => openAuthDialog('profile');
       document.getElementById('logout-btn').onclick = async () => {
         await sb.auth.signOut();
         session = null; profile = null;
         renderAuthBar(); render(currentFilter);
       };
     } else {
-      bar.innerHTML = `
-        <span>Want to comment? <button id="show-login">Log in</button> or <button id="show-signup">Sign up</button></span>
-        <div id="auth-forms" style="display:none;"></div>
-      `;
-      document.getElementById('show-login').onclick = () => showAuthForm('login');
-      document.getElementById('show-signup').onclick = () => showAuthForm('signup');
+      bar.innerHTML = `<span>Want to comment? <button id="show-login">Log in</button> or <button id="show-signup">Sign up</button></span>`;
+      document.getElementById('show-login').onclick = () => openAuthDialog('login');
+      document.getElementById('show-signup').onclick = () => openAuthDialog('signup');
     }
   }
 
-  function showAuthForm(mode){
-    const forms = document.getElementById('auth-forms');
-    forms.style.display = 'flex';
-    forms.innerHTML = `<form id="auth-form" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
-      + (mode === 'signup' ? `<input id="auth-name" placeholder="Your name" autocomplete="name">` : '')
-      + `<input id="auth-email" type="email" placeholder="Email" autocomplete="${mode === 'signup' ? 'email' : 'username'}">
-         <div style="display:flex;align-items:center;gap:6px;">
-           <input id="auth-password" type="password" placeholder="Password" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}">
-           <label style="font-size:0.75rem;display:flex;align-items:center;gap:4px;white-space:nowrap;">
-             <input type="checkbox" onchange="document.getElementById('auth-password').type = this.checked ? 'text' : 'password';"> Show
-           </label>
-         </div>
-         <div id="turnstile-auth-container"></div>
-         <button id="auth-submit" type="submit">${mode === 'signup' ? 'Sign up' : 'Log in'}</button>
-         ${mode === 'login' ? `<a href="#" onclick="forgotPassword(); return false;" style="font-size:0.8rem;">Forgot password?</a>` : ''}
-         <div id="auth-status" style="width:100%;"></div>
-       </form>`;
-    document.getElementById('auth-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      mode === 'signup' ? doSignup() : doLogin();
-    });
-    if(window.turnstile){
-      turnstileWidgetId = turnstile.render('#turnstile-auth-container', {
-        sitekey: TURNSTILE_SITE_KEY,
-        callback: (token) => { turnstileToken = token; }
-      });
-    }
+  function scheduleAuthPrompt(){
+    let seen = false;
+    try { seen = sessionStorage.getItem('auth-prompt-seen') === '1'; } catch(e) {}
+    if(session || seen) return;
+    setTimeout(() => {
+      if(session || authDialog.open) return;
+      openAuthDialog('signup', { prompt: true });
+    }, AUTH_PROMPT_DELAY_MS);
   }
 
-  async function forgotPassword(){
-    const email = document.getElementById('auth-email').value.trim();
-    const status = document.getElementById('auth-status');
-    if(!email){ status.textContent = 'Enter your email above first, then click "Forgot password?" again.'; return; }
-    if(!turnstileToken){ status.textContent = 'Please complete the verification check above first.'; return; }
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/reset-password.html',
-      captchaToken: turnstileToken
-    });
-    if(turnstileWidgetId !== null && window.turnstile) turnstile.reset(turnstileWidgetId);
-    turnstileToken = null;
-    status.textContent = error ? error.message : 'Check your email for a password reset link.';
-  }
-
-  async function doSignup(){
-    const name = document.getElementById('auth-name').value.trim();
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    const status = document.getElementById('auth-status');
-    if(!name || !email || !password){ status.textContent = 'All fields required.'; return; }
-    if(!turnstileToken){ status.textContent = 'Please complete the verification check.'; return; }
-    const { data, error } = await sb.auth.signUp({
-      email, password,
-      options: {
-        captchaToken: turnstileToken,
-        data: { display_name: name },
-        emailRedirectTo: window.location.origin + '/'
-      }
-    });
-    if(turnstileWidgetId !== null && window.turnstile) turnstile.reset(turnstileWidgetId);
-    turnstileToken = null;
-    if(error){ status.textContent = error.message; return; }
-    if(!data.session){ status.textContent = 'Check your email to confirm your account, then log in.'; return; }
-    session = data.session;
-    profile = { display_name: name };
-    renderAuthBar(); render(currentFilter);
-  }
-
-  async function doLogin(){
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    const status = document.getElementById('auth-status');
-    if(!turnstileToken){ status.textContent = 'Please complete the verification check.'; return; }
-    const { data, error } = await sb.auth.signInWithPassword({
-      email, password,
-      options: { captchaToken: turnstileToken }
-    });
-    if(turnstileWidgetId !== null && window.turnstile) turnstile.reset(turnstileWidgetId);
-    turnstileToken = null;
-    if(error){ status.textContent = error.message; return; }
-    session = data.session;
-    const { data: p } = await sb.from('profiles').select('display_name').eq('id', session.user.id).single();
-    profile = p;
-    renderAuthBar(); render(currentFilter);
-  }
 
   let loadSeq = 0;
   async function loadAll(){
     const seq = ++loadSeq;
-    const [{ data: reviews }, { data: comments }, { data: likes }, { data: commentLikes }] = await Promise.all([
+    const [{ data: reviews }, { data: comments }, { data: likes }, { data: commentLikes }, { data: profiles }] = await Promise.all([
       sb.from('reviews').select('*').order('created_at', {ascending:false}),
       sb.from('comments').select('*').order('created_at', {ascending:true}),
       sb.from('likes').select('review_id, type'),
-      sb.from('comment_likes').select('comment_id, user_id')
+      sb.from('comment_likes').select('comment_id, user_id'),
+      sb.from('profiles').select('id, avatar_icon, avatar_color')
     ]);
     if(seq !== loadSeq) return; // a newer refresh already started; drop this stale one
+    PROFILES.clear();
+    (profiles || []).forEach(p => PROFILES.set(p.id, p));
 
     ALL_REVIEWS = (reviews || []).map(r => ({
       ...r,
@@ -431,17 +814,13 @@
     camera: `<svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="6.5" width="16" height="10.5" rx="2"/><path d="M7 6.5l1.3-2h3.4l1.3 2" stroke-linejoin="round"/><circle cx="10" cy="11.5" r="3"/></svg>`
   };
   ICONS.gif = `<svg viewBox="0 0 24 20" width="22" height="19" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="21" height="15" rx="3.5"/><text x="12" y="13.4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.6" font-weight="700" fill="currentColor" stroke="none" letter-spacing="0.2">GIF</text></svg>`;
-  const EMOJI_PICKS = ['😀','😂','😍','👍','🔥','😢'];
   const AVATAR_COLORS = ['#2F6F6E', '#B3452F', '#6B4E8E', '#B08B1E', '#5A5751'];
   let popTarget = null;               // which like button should play its "pop" on the next render
   const expandedThreads = new Set();  // comment ids whose replies are currently shown
 
-  function avatarFor(name){
-    const n = (name || '?').trim() || '?';
-    let h = 0;
-    for(const ch of n) h = (h * 31 + ch.codePointAt(0)) >>> 0;
-    const initial = escapeHtml(Array.from(n)[0].toUpperCase());
-    return `<div class="avatar" style="background:${AVATAR_COLORS[h % AVATAR_COLORS.length]}" aria-hidden="true">${initial}</div>`;
+  function avatarFor(name, userId){
+    const p = userId ? PROFILES.get(userId) : null;
+    return avatarHTML(name, p?.avatar_icon, p?.avatar_color);
   }
 
   function timeAgo(d){
@@ -466,6 +845,8 @@
   function renderComment(c, allComments, reviewId, depth){
     const replies = allComments.filter(x => x.parent_comment_id === c.id);
     const isOwner = session && c.user_id === session.user.id;
+    const iAmSiteOwner = !!(session && session.user.id === OWNER_ID);
+    const byOwner = c.user_id === OWNER_ID;
     const likedByMe = !!(session && c.likerIds.includes(session.user.id));
     const expanded = expandedThreads.has(c.id);
     const fullDate = new Date(c.created_at).toLocaleString('en-US', { dateStyle:'long', timeStyle:'short' });
@@ -476,16 +857,16 @@
     const repliesLabel = expanded ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`;
     return `
       <div class="comment ${depth > 0 ? 'reply' : ''}" data-id="${c.id}">
-        ${avatarFor(c.author)}
+        ${avatarFor(c.author, c.user_id)}
         <div class="comment-main">
-          <div class="bubble"><span class="who">${escapeHtml(c.author)}</span><span class="comment-text">${escapeHtml(c.body)}</span></div>
+          <div class="bubble"><span class="who">${escapeHtml(c.author)}${byOwner ? `<span class="owner-badge" title="Written by the site's author"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.3l2.2 2.2 4.8-5"/></svg>Author</span>` : ''}</span><span class="comment-text">${escapeHtml(c.body)}</span></div>
           ${c.image_url ? `<img class="comment-img" src="${c.image_url}" alt="Image shared by ${escapeHtml(c.author)}">` : ''}
           <div class="comment-actions">
             <time datetime="${c.created_at}" title="${fullDate}">${timeAgo(c.created_at)}</time>
             ${likeControl}
             ${session && profile ? `<button type="button" class="reply-btn" data-id="${c.id}" data-review="${reviewId}" title="Reply" aria-label="Reply">${ICONS.reply}</button>` : ''}
             ${isOwner ? `<button type="button" class="edit-btn" data-id="${c.id}" title="Edit" aria-label="Edit">${ICONS.edit}</button>` : ''}
-            ${isOwner ? `<button type="button" class="delete-comment-btn" data-id="${c.id}" title="Delete" aria-label="Delete">${ICONS.delete}</button>` : ''}
+            ${isOwner || iAmSiteOwner ? `<button type="button" class="delete-comment-btn" data-id="${c.id}" data-mine="${isOwner ? '1' : ''}" title="Delete" aria-label="Delete">${ICONS.delete}</button>` : ''}
           </div>
           <div class="reply-form-container"></div>
           ${replies.length ? `
@@ -586,6 +967,38 @@
     return gifs;
   }
 
+  // ---------- Full emoji picker (loaded the first time someone opens it) ----------
+  const EMOJI_PICKER_SRC = 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.29.1/index.js';
+  let emojiPickerPromise = null;
+  let emojiInsert = null; // inserts into whichever comment box opened the picker
+  function getEmojiPicker(){
+    if(!emojiPickerPromise){
+      emojiPickerPromise = new Promise((resolve, reject) => {
+        const giveUp = setTimeout(() => { emojiPickerPromise = null; reject(new Error('timeout')); }, 10000);
+        if(!customElements.get('emoji-picker')){
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.src = EMOJI_PICKER_SRC;
+          script.onerror = () => { clearTimeout(giveUp); emojiPickerPromise = null; script.remove(); reject(new Error('load')); };
+          document.head.appendChild(script);
+        }
+        customElements.whenDefined('emoji-picker').then(() => {
+          clearTimeout(giveUp);
+          const el = document.createElement('emoji-picker');
+          el.addEventListener('emoji-click', (e) => { if(emojiInsert) emojiInsert(e.detail.unicode); });
+          resolve(el);
+        });
+      });
+    }
+    return emojiPickerPromise;
+  }
+  function syncEmojiTheme(el){
+    const root = document.documentElement;
+    const dark = root.dataset.theme === 'dark' || (!root.dataset.theme && darkQuery.matches);
+    el.classList.toggle('dark', dark);
+    el.classList.toggle('light', !dark);
+  }
+
   // Shared markup for the main comment box and reply boxes
   function composerHTML(placeholder, submitLabel){
     return `
@@ -596,9 +1009,7 @@
           ${GIFS_ENABLED ? `<button type="button" class="gif-toggle" title="Add GIF" aria-label="Add GIF" aria-expanded="false">${ICONS.gif}</button>` : ''}
           <button type="button" class="camera-toggle" title="Add photo" aria-label="Add photo">${ICONS.camera}</button>
         </div>
-        <div class="emoji-popup">
-          ${EMOJI_PICKS.map(e => `<button type="button" data-emoji="${e}" aria-label="Insert ${e}">${e}</button>`).join('')}
-        </div>
+        <div class="emoji-popup" role="dialog" aria-label="Choose an emoji"></div>
         ${GIFS_ENABLED ? `
         <div class="gif-popup" role="dialog" aria-label="Choose a GIF">
           <input type="search" class="gif-search" placeholder="Search GIFs" aria-label="Search GIFs" enterkeyhint="search">
@@ -635,7 +1046,28 @@
     form._setGif = setGif;
 
     textarea.addEventListener('input', () => { autoGrow(textarea); refresh(); });
-    form.querySelector('.emoji-toggle').addEventListener('click', () => { closeGifs(); popup.classList.toggle('open'); });
+    const insertEmoji = (emoji) => {
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      textarea.setRangeText(emoji, start, end, 'end'); // goes where the cursor was, and the picker stays open for more
+      autoGrow(textarea);
+      refresh();
+    };
+    form.querySelector('.emoji-toggle').addEventListener('click', async () => {
+      closeGifs();
+      if(popup.classList.contains('open')){ popup.classList.remove('open'); return; }
+      document.querySelectorAll('.emoji-popup.open').forEach(p => p.classList.remove('open'));
+      popup.classList.add('open');
+      emojiInsert = insertEmoji;
+      if(!popup.querySelector('emoji-picker')) popup.innerHTML = '<p class="gif-msg">Loading emojis…</p>';
+      try {
+        const picker = await getEmojiPicker();
+        syncEmojiTheme(picker);
+        if(popup.classList.contains('open')) popup.replaceChildren(picker);
+      } catch(err) {
+        popup.innerHTML = '<p class="gif-msg">Emojis couldn\'t load. Check your connection and try again.</p>';
+      }
+    });
 
     if(gifPopup){
       const search = gifPopup.querySelector('.gif-search');
@@ -682,17 +1114,6 @@
         if(e.key === 'Enter'){ e.preventDefault(); clearTimeout(typingTimer); loadGifs(search.value); }
       });
     }
-    popup.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const start = textarea.selectionStart ?? textarea.value.length;
-        const end = textarea.selectionEnd ?? textarea.value.length;
-        textarea.setRangeText(btn.dataset.emoji, start, end, 'end');
-        popup.classList.remove('open');
-        textarea.focus();
-        autoGrow(textarea);
-        refresh();
-      });
-    });
     form.querySelector('.camera-toggle').addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
@@ -990,7 +1411,10 @@
 
     container.querySelectorAll('.delete-comment-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if(!confirm('Delete your comment? Any replies to it will be deleted too.')) return;
+        const prompt = btn.dataset.mine
+          ? 'Delete your comment? Any replies to it will be deleted too.'
+          : "Delete this visitor's comment? Any replies to it will be deleted too.";
+        if(!confirm(prompt)) return;
         const { error } = await sb.from('comments').delete().eq('id', btn.dataset.id);
         if(error){ showToast("Couldn't delete your comment: " + error.message, true); return; }
         showToast('Comment deleted');
@@ -1099,7 +1523,7 @@
   }
   function startLiveUpdates(){
     const channel = sb.channel('site-activity');
-    ['reviews', 'comments', 'likes', 'comment_likes'].forEach(table => {
+    ['reviews', 'comments', 'likes', 'comment_likes', 'profiles'].forEach(table => {
       channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleRefresh);
     });
     channel.subscribe();
@@ -1115,6 +1539,7 @@
 
   (async () => {
     await initAuth();
+    scheduleAuthPrompt();
     await loadAll();
     document.getElementById('entries').removeAttribute('aria-busy');
     startLiveUpdates();
