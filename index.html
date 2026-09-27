@@ -52,7 +52,7 @@
   nav button{font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px 0;border-bottom:2px solid transparent;}
   nav button.active{color:var(--ink);border-bottom-color:var(--ink);}
   main{max-width:680px;margin:0 auto;padding:8px 24px 64px;}
-  .entry{background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--cat, var(--sheet-edge));border-radius:3px;padding:26px 28px 22px;margin-bottom:18px;overflow:auto;}
+  .entry{background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--cat, var(--sheet-edge));border-radius:3px;padding:26px 28px 22px;margin-bottom:18px;display:flow-root;}
   .entry[data-cat="film"]{--cat:var(--film);} .entry[data-cat="tv"]{--cat:var(--tv);} .entry[data-cat="game"]{--cat:var(--game);}
   .entry[data-cat="music"]{--cat:var(--music);} .entry[data-cat="announcement"]{--cat:var(--ink);} .entry[data-cat="post"]{--cat:var(--post);}
   .entry-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:0.8rem;color:var(--ink-soft);}
@@ -78,6 +78,22 @@
   .bubble.fresh{animation:fresh 2.6s ease-out;}
   @keyframes fresh{0%,35%{background:var(--fresh);}100%{background:var(--bubble);}}
   .bubble .who{display:block;font-weight:600;font-size:0.8rem;}
+  .poll{clear:both;margin:4px 0 18px;padding:14px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);max-width:520px;}
+  .poll-q{font-weight:600;margin-bottom:10px;}
+  .poll-opts{display:flex;flex-direction:column;gap:8px;}
+  .poll-opt{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:40px;padding:8px 14px;border:1px solid var(--rule);border-radius:20px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:0.9rem;text-align:left;cursor:pointer;overflow:hidden;}
+  .poll-opt:hover:not([disabled]){border-color:var(--ink-soft);}
+  .poll-opt.result{border-radius:8px;}
+  .poll-opt[disabled]{cursor:default;}
+  .poll-fill{position:absolute;top:0;bottom:0;left:0;background:var(--ink);opacity:.08;transition:width .6s cubic-bezier(.2,.7,.2,1);}
+  .poll-opt.mine{border-color:var(--cat, var(--ink));}
+  .poll-opt.mine .poll-fill{background:var(--cat, var(--ink));opacity:.24;}
+  .poll-label, .poll-pct{position:relative;}
+  .poll-opt.mine .poll-label{font-weight:600;}
+  .poll-check{color:var(--cat, var(--ink));}
+  .poll-pct{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:0.85rem;}
+  .poll-note{margin-top:10px;font-size:0.8rem;color:var(--ink-soft);}
+  .poll-note button{background:none;border:none;padding:0;font:inherit;color:var(--ink);text-decoration:underline;cursor:pointer;}
   .owner-badge{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px 1px 5px;border-radius:9px;background:var(--ink);color:var(--paper);font-size:0.66rem;font-weight:600;vertical-align:1px;}
   .owner-badge svg{width:10px;height:10px;}
   .comment .comment-img{display:block;max-width:220px;max-height:160px;object-fit:contain;border:1px solid var(--rule);border-radius:12px;margin:6px 0 2px;background:var(--surface);cursor:zoom-in;}
@@ -109,9 +125,11 @@
   .gif-popup.open{display:flex;animation:rise .14s ease-out;}
   .gif-search{font-family:inherit;font-size:0.85rem;padding:8px 12px;border:1px solid var(--rule);border-radius:18px;background:var(--paper);color:var(--ink);}
   .gif-search:focus{outline:none;border-color:var(--ink-soft);}
-  .gif-grid{columns:2;column-gap:6px;height:280px;overflow-y:auto;}
-  .gif-item{display:block;width:100%;padding:0;border:none;background:var(--tint);border-radius:8px;overflow:hidden;margin:0 0 6px;break-inside:avoid;cursor:pointer;}
-  .gif-item img{display:block;width:100%;height:auto;min-height:60px;}
+  .gif-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;height:280px;overflow-y:auto;overflow-x:hidden;}
+  .gif-item{display:block;width:100%;height:110px;padding:0;border:none;background:var(--tint);border-radius:8px;overflow:hidden;cursor:pointer;}
+  .gif-item img{display:block;width:100%;height:100%;object-fit:cover;}
+  .gif-msg{grid-column:1 / -1;}
+  .emoji-popup.below, .gif-popup.below{bottom:auto;top:calc(100% + 6px);}
   .gif-item:hover, .gif-item:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;}
   .gif-msg{column-span:all;font-size:0.8rem;color:var(--ink-soft);text-align:center;padding:40px 12px;margin:0;}
   .gif-attrib{font-size:0.7rem;color:var(--ink-soft);text-align:right;padding-right:4px;}
@@ -765,14 +783,24 @@
   let loadSeq = 0;
   async function loadAll(){
     const seq = ++loadSeq;
-    const [{ data: reviews }, { data: comments }, { data: likes }, { data: commentLikes }, { data: profiles }] = await Promise.all([
+    const [{ data: reviews }, { data: comments }, { data: likes }, { data: commentLikes }, { data: profiles },
+           { data: polls }, { data: pollOptions }, { data: pollVotes }] = await Promise.all([
       sb.from('reviews').select('*').order('created_at', {ascending:false}),
       sb.from('comments').select('*').order('created_at', {ascending:true}),
       sb.from('likes').select('review_id, type'),
       sb.from('comment_likes').select('comment_id, user_id'),
-      sb.from('profiles').select('id, avatar_icon, avatar_color')
+      sb.from('profiles').select('id, avatar_icon, avatar_color'),
+      sb.from('polls').select('id, review_id, question, closed'),
+      sb.from('poll_options').select('id, poll_id, label, position'),
+      sb.from('poll_votes').select('poll_id, option_id, user_id')
     ]);
     if(seq !== loadSeq) return; // a newer refresh already started; drop this stale one
+    const pollByReview = new Map();
+    (polls || []).forEach(pl => pollByReview.set(pl.review_id, {
+      ...pl,
+      options: (pollOptions || []).filter(o => o.poll_id === pl.id).sort((a, b) => a.position - b.position)
+        .map(o => ({ ...o, voters: (pollVotes || []).filter(v => v.option_id === o.id).map(v => v.user_id) }))
+    }));
     PROFILES.clear();
     (profiles || []).forEach(p => PROFILES.set(p.id, p));
 
@@ -786,6 +814,7 @@
           likerIds: cLikes.map(cl => cl.user_id)
         };
       }),
+      poll: pollByReview.get(r.id) || null,
       likeCount: (likes || []).filter(l => l.review_id === r.id && l.type === 'like').length,
       dislikeCount: (likes || []).filter(l => l.review_id === r.id && l.type === 'dislike').length
     }));
@@ -877,6 +906,40 @@
         </div>
       </div>
     `;
+  }
+
+  let animatePoll = null; // poll whose result bars should grow in after someone's first vote
+
+  function renderPoll(poll){
+    const total = poll.options.reduce((n, o) => n + o.voters.length, 0);
+    const myVote = session ? poll.options.find(o => o.voters.includes(session.user.id))?.id : null;
+    const canVote = !!(session && profile) && !poll.closed;
+    const showResults = !!myVote || !canVote;
+    const grow = animatePoll === poll.id;
+    const options = poll.options.map(o => {
+      if(!showResults){
+        return `<button type="button" class="poll-opt" data-poll="${poll.id}" data-opt="${o.id}"><span class="poll-label">${escapeHtml(o.label)}</span></button>`;
+      }
+      const pct = total ? Math.round(o.voters.length / total * 100) : 0;
+      const mine = o.id === myVote;
+      return `<button type="button" class="poll-opt result ${mine ? 'mine' : ''}" data-poll="${poll.id}" data-opt="${o.id}" aria-pressed="${mine}" ${canVote ? '' : 'disabled'}>
+          <span class="poll-fill" style="width:${grow ? 0 : pct}%" data-pct="${pct}"></span>
+          <span class="poll-label">${escapeHtml(o.label)}${mine ? '<span class="poll-check" aria-label="Your vote"> \u2713</span>' : ''}</span>
+          <span class="poll-pct">${pct}%</span>
+        </button>`;
+    }).join('');
+    const votes = `${total} ${total === 1 ? 'vote' : 'votes'}`;
+    let note;
+    if(poll.closed) note = `${votes}. This poll is closed.`;
+    else if(!session) note = `${votes}. <button type="button" class="poll-login">Log in to vote</button>`;
+    else if(myVote) note = `${votes}. Tap another option to change your vote.`;
+    else note = `${votes}. Tap an option to vote.`;
+    return `
+      <div class="poll" data-poll-id="${poll.id}">
+        <div class="poll-q">${escapeHtml(poll.question)}</div>
+        <div class="poll-opts">${options}</div>
+        <div class="poll-note">${note}</div>
+      </div>`;
   }
 
   function findCommentById(id){
@@ -999,6 +1062,20 @@
     el.classList.toggle('light', !dark);
   }
 
+  // Open a pop-up above the comment box if it fits, otherwise below, then make sure all of it is on screen
+  function placePopup(pop){
+    pop.classList.remove('below');
+    const box = pop.parentElement.getBoundingClientRect();
+    const navBottom = Math.max(0, document.querySelector('nav').getBoundingClientRect().bottom);
+    const needed = pop.offsetHeight + 8;
+    const above = box.top - navBottom;
+    const below = window.innerHeight - box.bottom;
+    if(above < needed && below > above) pop.classList.add('below');
+    const r = pop.getBoundingClientRect();
+    if(r.bottom > window.innerHeight - 8) window.scrollBy({ top: r.bottom - window.innerHeight + 8, behavior: 'smooth' });
+    else if(r.top < navBottom + 8) window.scrollBy({ top: r.top - navBottom - 8, behavior: 'smooth' });
+  }
+
   // Shared markup for the main comment box and reply boxes
   function composerHTML(placeholder, submitLabel){
     return `
@@ -1058,12 +1135,13 @@
       if(popup.classList.contains('open')){ popup.classList.remove('open'); return; }
       document.querySelectorAll('.emoji-popup.open').forEach(p => p.classList.remove('open'));
       popup.classList.add('open');
+      placePopup(popup);
       emojiInsert = insertEmoji;
       if(!popup.querySelector('emoji-picker')) popup.innerHTML = '<p class="gif-msg">Loading emojis…</p>';
       try {
         const picker = await getEmojiPicker();
         syncEmojiTheme(picker);
-        if(popup.classList.contains('open')) popup.replaceChildren(picker);
+        if(popup.classList.contains('open')){ popup.replaceChildren(picker); placePopup(popup); }
       } catch(err) {
         popup.innerHTML = '<p class="gif-msg">Emojis couldn\'t load. Check your connection and try again.</p>';
       }
@@ -1080,7 +1158,9 @@
           const gifs = await fetchGifs(query);
           if(req !== requestNo) return; // a newer search replaced this one
           if(!gifs.length){
-            grid.innerHTML = `<p class="gif-msg">No GIFs found for "${escapeHtml(query)}". Try another word.</p>`;
+            grid.innerHTML = query.trim()
+              ? `<p class="gif-msg">No GIFs found for "${escapeHtml(query.trim())}". Try another word.</p>`
+              : '<p class="gif-msg">No trending GIFs right now. Try searching for one.</p>';
             return;
           }
           grid.innerHTML = gifs.map(g =>
@@ -1100,6 +1180,7 @@
         popup.classList.remove('open');
         const opening = !gifPopup.classList.contains('open');
         gifPopup.classList.toggle('open', opening);
+        if(opening) placePopup(gifPopup);
         gifToggle.setAttribute('aria-expanded', opening);
         if(opening){
           if(!grid.children.length) loadGifs(search.value);
@@ -1327,6 +1408,7 @@
         <div class="subject">${r.subject || ''}</div>
         ${r.rating != null ? `<div class="stars">${stars(r.rating)}</div>` : ''}
         <p class="body">${r.body}</p>
+        ${r.poll ? renderPoll(r.poll) : ''}
         <div class="actions">
           <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="Like"><span class="heart">❤️</span> ${r.likeCount}</button>
           <button class="like-btn vote-btn ${vote === 'dislike' ? 'liked' : ''} ${popTarget === `r-${r.id}-dislike` ? 'pop' : ''}" data-id="${r.id}" data-type="dislike" aria-pressed="${vote === 'dislike'}" title="Dislike"><span class="heart">👎</span> ${r.dislikeCount}</button>
@@ -1365,6 +1447,31 @@
       });
       cover.addEventListener('keydown', (e) => {
         if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openLightbox(cover.querySelector('img').src); }
+      });
+    });
+
+    if(animatePoll){
+      const id = animatePoll;
+      animatePoll = null;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        container.querySelectorAll(`.poll[data-poll-id="${id}"] .poll-fill`).forEach(f => { f.style.width = f.dataset.pct + '%'; });
+      }));
+    }
+    container.querySelectorAll('.poll-login').forEach(b => b.addEventListener('click', () => openAuthDialog('login')));
+    container.querySelectorAll('.poll-opt:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pollId = btn.dataset.poll, optId = btn.dataset.opt;
+        const poll = ALL_REVIEWS.find(r => r.poll && r.poll.id === pollId)?.poll;
+        if(!poll || poll.closed || !session) return;
+        const current = poll.options.find(o => o.voters.includes(session.user.id));
+        if(current && current.id === optId) return;
+        container.querySelectorAll(`.poll[data-poll-id="${pollId}"] .poll-opt`).forEach(b => { b.disabled = true; });
+        const { error } = current
+          ? await sb.from('poll_votes').update({ option_id: optId }).eq('poll_id', pollId).eq('user_id', session.user.id)
+          : await sb.from('poll_votes').insert({ poll_id: pollId, option_id: optId, user_id: session.user.id });
+        if(error){ showToast("Couldn't save your vote: " + error.message, true); loadAll(); return; }
+        if(!current) animatePoll = pollId;
+        loadAll();
       });
     });
 
@@ -1523,7 +1630,7 @@
   }
   function startLiveUpdates(){
     const channel = sb.channel('site-activity');
-    ['reviews', 'comments', 'likes', 'comment_likes', 'profiles'].forEach(table => {
+    ['reviews', 'comments', 'likes', 'comment_likes', 'profiles', 'polls', 'poll_options', 'poll_votes'].forEach(table => {
       channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleRefresh);
     });
     channel.subscribe();

@@ -21,6 +21,15 @@
   #app{display:none;}
   .manage-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;}
   .manage-row button{background:#b3452f;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:0.8rem;}
+  .manage-row .row-actions{display:flex;gap:6px;flex:none;}
+  .manage-row button.poll-btn{background:#eee;color:#1C1B19;border:1px solid #ccc;}
+  .poll-toggle{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:0.95rem;cursor:pointer;}
+  .poll-toggle input{width:auto;margin:0;}
+  #poll-fields{border:1px solid #D8D1C3;border-radius:10px;padding:14px 14px 2px;margin-bottom:16px;background:#FFFDF9;}
+  .poll-opt-row{display:flex;gap:6px;align-items:flex-start;}
+  .poll-opt-row input{flex:1;}
+  .poll-opt-row button{margin-bottom:12px;padding:8px 11px;background:none;border:1px solid #ccc;border-radius:4px;}
+  button.secondary{background:#eee;border:1px solid #ccc;border-radius:4px;margin-bottom:12px;}
   .date-group{margin-top:8px;}
   .date-group summary{font-weight:600;font-size:0.85rem;cursor:pointer;padding:6px 0;color:#333;list-style:none;user-select:none;}
   .date-group summary::-webkit-details-marker{display:none;}
@@ -77,6 +86,14 @@
     <option value="1">1 star</option>
   </select>
   <textarea id="body" placeholder="Your review"></textarea>
+  <div id="poll-section" hidden>
+    <label class="poll-toggle"><input type="checkbox" id="poll-enabled"> Add a poll</label>
+    <div id="poll-fields" hidden>
+      <input id="poll-question" maxlength="140" placeholder="Poll question (e.g. Which movie should I watch next?)">
+      <div id="poll-options"></div>
+      <button type="button" id="add-poll-option" class="secondary">+ Add option</button>
+    </div>
+  </div>
   <label style="font-size:0.85rem;display:block;margin-bottom:4px;">Cover image (optional)</label>
   <input id="image" type="file" accept="image/*">
   <button onclick="submitReview()">Publish</button>
@@ -128,18 +145,34 @@
 
   async function loadManageList(){
     const list = document.getElementById('manage-list');
-    const { data, error } = await sb.from('reviews').select('*').order('created_at', {ascending:false});
+    const [{ data, error }, { data: polls }] = await Promise.all([
+      sb.from('reviews').select('*').order('created_at', {ascending:false}),
+      sb.from('polls').select('id, review_id, closed')
+    ]);
     if(error){ list.textContent = 'Error loading reviews.'; return; }
     if(!data.length){ list.textContent = 'No reviews yet.'; return; }
-    list.innerHTML = data.map(r => `
+    const pollFor = new Map((polls || []).map(p => [p.review_id, p]));
+    list.innerHTML = data.map(r => {
+      const poll = pollFor.get(r.id);
+      return `
       <div class="manage-row">
-        <span>${r.title} <em>(${r.category})</em></span>
-        <button data-id="${r.id}">Delete</button>
-      </div>
-    `).join('');
-    list.querySelectorAll('button').forEach(btn => {
+        <span>${r.title} <em>(${r.category}${poll ? (poll.closed ? ', poll closed' : ', poll open') : ''})</em></span>
+        <span class="row-actions">
+          ${poll ? `<button class="poll-btn" data-poll="${poll.id}" data-closed="${poll.closed ? '1' : ''}">${poll.closed ? 'Reopen poll' : 'Close poll'}</button>` : ''}
+          <button class="del-btn" data-id="${r.id}">Delete</button>
+        </span>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.poll-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if(!confirm('Delete "' + btn.parentElement.querySelector('span').textContent.trim() + '"? This also removes its comments and likes.')) return;
+        const { error } = await sb.from('polls').update({ closed: !btn.dataset.closed }).eq('id', btn.dataset.poll);
+        if(error){ alert("Couldn't update the poll: " + error.message); return; }
+        loadManageList();
+      });
+    });
+    list.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Delete "' + btn.closest('.manage-row').querySelector('span').textContent.trim() + '"? This also removes its comments, likes, and any poll.')) return;
         const { data, error } = await sb.from('reviews').delete().eq('id', btn.dataset.id).select();
         if(error){ alert('Delete failed: ' + error.message); return; }
         if(!data || data.length === 0){ alert('Nothing was deleted — this usually means your admin delete policy on the reviews table has the wrong User UID. Check Database → Policies → "admin write reviews".'); return; }
@@ -253,7 +286,42 @@
     document.getElementById('subject').placeholder = copy.subject;
     document.getElementById('body').placeholder = copy.body;
     document.getElementById('rating').hidden = key !== 'review';
+    document.getElementById('poll-section').hidden = key === 'review';
   }
+
+  // ---------- Poll builder ----------
+  const MAX_POLL_OPTIONS = 6;
+  function addPollOption(value = ''){
+    const wrap = document.getElementById('poll-options');
+    if(wrap.children.length >= MAX_POLL_OPTIONS) return;
+    const row = document.createElement('div');
+    row.className = 'poll-opt-row';
+    row.innerHTML = '<input class="poll-option" maxlength="80"><button type="button" aria-label="Remove this option">&#10005;</button>';
+    row.querySelector('input').value = value;
+    row.querySelector('button').addEventListener('click', () => { row.remove(); refreshPollOptions(); });
+    wrap.appendChild(row);
+    refreshPollOptions();
+  }
+  function refreshPollOptions(){
+    const rows = [...document.querySelectorAll('#poll-options .poll-opt-row')];
+    rows.forEach((row, i) => {
+      row.querySelector('input').placeholder = 'Option ' + (i + 1);
+      row.querySelector('button').hidden = rows.length <= 2; // a poll always keeps at least 2 options
+    });
+    document.getElementById('add-poll-option').hidden = rows.length >= MAX_POLL_OPTIONS;
+  }
+  function resetPoll(){
+    document.getElementById('poll-enabled').checked = false;
+    document.getElementById('poll-fields').hidden = true;
+    document.getElementById('poll-question').value = '';
+    document.getElementById('poll-options').innerHTML = '';
+    addPollOption(); addPollOption();
+  }
+  document.getElementById('poll-enabled').addEventListener('change', (e) => {
+    document.getElementById('poll-fields').hidden = !e.target.checked;
+  });
+  document.getElementById('add-poll-option').addEventListener('click', () => addPollOption());
+  resetPoll();
 
   async function submitReview(){
     const title = document.getElementById('title').value.trim();
@@ -270,6 +338,17 @@
       return;
     }
 
+    const pollOn = !isReview && document.getElementById('poll-enabled').checked;
+    const pollQuestion = document.getElementById('poll-question').value.trim();
+    const pollOptions = [...document.querySelectorAll('#poll-options .poll-option')].map(i => i.value.trim()).filter(Boolean);
+    if(pollOn){
+      if(!pollQuestion){ status.textContent = "Add a question for your poll."; return; }
+      if(pollOptions.length < 2){ status.textContent = "Your poll needs at least 2 options."; return; }
+      if(new Set(pollOptions.map(o => o.toLowerCase())).size !== pollOptions.length){
+        status.textContent = "Each poll option needs to be different."; return;
+      }
+    }
+
     let image_url = null;
     if(imageFile){
       status.textContent = "Uploading image…";
@@ -282,11 +361,22 @@
       image_url = sb.storage.from('review-images').getPublicUrl(path).data.publicUrl;
     }
 
-    const { error } = await sb.from('reviews').insert({ title, subject, category, rating, body, image_url });
+    const { data: saved, error } = await sb.from('reviews').insert({ title, subject, category, rating, body, image_url }).select().single();
+    if(!error && pollOn){
+      const { data: poll, error: pollError } = await sb.from('polls').insert({ review_id: saved.id, question: pollQuestion }).select().single();
+      const { error: optError } = pollError ? { error: pollError } :
+        await sb.from('poll_options').insert(pollOptions.map((label, position) => ({ poll_id: poll.id, label, position })));
+      if(pollError || optError){
+        status.textContent = "Published, but the poll couldn't be saved: " + (pollError || optError).message;
+        loadManageList();
+        return;
+      }
+    }
     if(error){
       status.textContent = "Error: " + error.message;
     } else {
       status.textContent = "Published! Check the live site.";
+      resetPoll();
       document.getElementById('title').value = '';
       document.getElementById('subject').value = '';
       document.getElementById('body').value = '';
