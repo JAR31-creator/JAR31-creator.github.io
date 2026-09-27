@@ -29,6 +29,13 @@
   .poll-opt-row{display:flex;gap:6px;align-items:flex-start;}
   .poll-opt-row input{flex:1;}
   .poll-opt-row button{margin-bottom:12px;padding:8px 11px;background:none;border:1px solid #ccc;border-radius:4px;}
+  .poll-end-label{display:block;font-size:0.85rem;font-weight:600;margin:4px 0 4px;}
+  .poll-hint{font-size:0.8rem;color:#6B655C;margin:-6px 0 12px;}
+  .row-title{flex:1;min-width:0;}
+  .end-edit{margin-top:6px;font-size:0.82rem;}
+  .end-edit summary{cursor:pointer;color:#555;}
+  .end-edit input{width:auto;margin:6px 6px 0 0;padding:5px;}
+  .manage-row .end-edit button{background:#eee;color:#1C1B19;border:1px solid #ccc;margin:6px 6px 0 0;}
   button.secondary{background:#eee;border:1px solid #ccc;border-radius:4px;margin-bottom:12px;}
   .date-group{margin-top:8px;}
   .date-group summary{font-weight:600;font-size:0.85rem;cursor:pointer;padding:6px 0;color:#333;list-style:none;user-select:none;}
@@ -92,6 +99,9 @@
       <input id="poll-question" maxlength="140" placeholder="Poll question (e.g. Which movie should I watch next?)">
       <div id="poll-options"></div>
       <button type="button" id="add-poll-option" class="secondary">+ Add option</button>
+      <label class="poll-end-label" for="poll-ends">Voting ends (optional)</label>
+      <input type="datetime-local" id="poll-ends">
+      <p class="poll-hint">Leave this blank to keep the poll open until you close it yourself.</p>
     </div>
   </div>
   <label style="font-size:0.85rem;display:block;margin-bottom:4px;">Cover image (optional)</label>
@@ -147,22 +157,47 @@
     const list = document.getElementById('manage-list');
     const [{ data, error }, { data: polls }] = await Promise.all([
       sb.from('reviews').select('*').order('created_at', {ascending:false}),
-      sb.from('polls').select('id, review_id, closed')
+      sb.from('polls').select('id, review_id, closed, question, ends_at')
     ]);
     if(error){ list.textContent = 'Error loading reviews.'; return; }
     if(!data.length){ list.textContent = 'No reviews yet.'; return; }
     const pollFor = new Map((polls || []).map(p => [p.review_id, p]));
     list.innerHTML = data.map(r => {
       const poll = pollFor.get(r.id);
+      const ended = !!(poll && poll.ends_at && new Date(poll.ends_at) <= new Date());
+      const pollStatus = !poll ? ''
+        : poll.closed ? ', poll closed'
+        : ended ? `, poll ended ${formatWhen(poll.ends_at)}`
+        : poll.ends_at ? `, poll open until ${formatWhen(poll.ends_at)}`
+        : ', poll open';
       return `
       <div class="manage-row">
-        <span>${r.title} <em>(${r.category}${poll ? (poll.closed ? ', poll closed' : ', poll open') : ''})</em></span>
+        <span class="row-title">${r.title || (poll ? 'Poll: ' + escapeHtml(poll.question) : '(untitled)')} <em>(${r.category}${pollStatus})</em>
+          ${poll ? `
+          <details class="end-edit">
+            <summary>${poll.ends_at ? 'Change end date' : 'Add an end date'}</summary>
+            <input type="datetime-local" class="end-input" value="${toLocalInput(poll.ends_at)}">
+            <button class="end-save" data-poll="${poll.id}">Save</button>
+            ${poll.ends_at ? `<button class="end-clear" data-poll="${poll.id}">Remove end date</button>` : ''}
+          </details>` : ''}
+        </span>
         <span class="row-actions">
-          ${poll ? `<button class="poll-btn" data-poll="${poll.id}" data-closed="${poll.closed ? '1' : ''}">${poll.closed ? 'Reopen poll' : 'Close poll'}</button>` : ''}
+          ${poll && !ended ? `<button class="poll-btn" data-poll="${poll.id}" data-closed="${poll.closed ? '1' : ''}">${poll.closed ? 'Reopen poll' : 'Close poll'}</button>` : ''}
           <button class="del-btn" data-id="${r.id}">Delete</button>
         </span>
       </div>`;
     }).join('');
+    const setPollEnd = async (pollId, endsAt) => {
+      const { error } = await sb.from('polls').update({ ends_at: endsAt }).eq('id', pollId);
+      if(error){ alert("Couldn't update the end date: " + error.message); return; }
+      loadManageList();
+    };
+    list.querySelectorAll('.end-save').forEach(btn => btn.addEventListener('click', () => {
+      const value = btn.parentElement.querySelector('.end-input').value;
+      if(!value){ alert('Pick a date and time first, or use "Remove end date".'); return; }
+      setPollEnd(btn.dataset.poll, new Date(value).toISOString()); // a past time ends the poll right away
+    }));
+    list.querySelectorAll('.end-clear').forEach(btn => btn.addEventListener('click', () => setPollEnd(btn.dataset.poll, null)));
     list.querySelectorAll('.poll-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const { error } = await sb.from('polls').update({ closed: !btn.dataset.closed }).eq('id', btn.dataset.poll);
@@ -172,7 +207,7 @@
     });
     list.querySelectorAll('.del-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if(!confirm('Delete "' + btn.closest('.manage-row').querySelector('span').textContent.trim() + '"? This also removes its comments, likes, and any poll.')) return;
+        if(!confirm('Delete "' + btn.closest('.manage-row').querySelector('.row-title').firstChild.textContent.trim() + '"? This also removes its comments, likes, and any poll.')) return;
         const { data, error } = await sb.from('reviews').delete().eq('id', btn.dataset.id).select();
         if(error){ alert('Delete failed: ' + error.message); return; }
         if(!data || data.length === 0){ alert('Nothing was deleted — this usually means your admin delete policy on the reviews table has the wrong User UID. Check Database → Policies → "admin write reviews".'); return; }
@@ -191,7 +226,7 @@
   async function loadCommentsList(){
     const list = document.getElementById('comments-list');
     const { data, error } = await sb.from('comments')
-      .select('id, author, body, image_url, created_at, reviews(title)')
+      .select('id, author, body, image_url, created_at, reviews(title, category)')
       .order('created_at', {ascending:false});
     if(error){ list.textContent = 'Error loading comments.'; return; }
     if(!data.length){ list.textContent = 'No comments yet.'; return; }
@@ -213,7 +248,7 @@
         ${g.items.map(c => `
           <div class="manage-row">
             <span>
-              <em>${escapeHtml(c.reviews ? c.reviews.title : 'Unknown review')}</em> —
+              <em>${escapeHtml(c.reviews ? (c.reviews.title || 'Poll ' + c.reviews.category) : 'Unknown review')}</em> —
               <strong>${escapeHtml(c.author)}</strong>:
               ${escapeHtml(c.body) || '(image only)'}
               ${c.image_url ? ' 📷' : ''}
@@ -285,11 +320,25 @@
     document.getElementById('title').placeholder = copy.title;
     document.getElementById('subject').placeholder = copy.subject;
     document.getElementById('body').placeholder = copy.body;
+    if(key !== 'review' && document.getElementById('poll-enabled')?.checked){
+      document.getElementById('title').placeholder = copy.title.replace(/^Title/, 'Title, optional with a poll');
+      document.getElementById('body').placeholder = copy.body + ' (optional with a poll)';
+    }
     document.getElementById('rating').hidden = key !== 'review';
     document.getElementById('poll-section').hidden = key === 'review';
   }
 
   // ---------- Poll builder ----------
+  // datetime-local boxes work in local time; the database stores an exact moment
+  function toLocalInput(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
+  function formatWhen(iso){
+    return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  document.getElementById('poll-ends').addEventListener('focus', (e) => { e.target.min = toLocalInput(new Date().toISOString()); });
   const MAX_POLL_OPTIONS = 6;
   function addPollOption(value = ''){
     const wrap = document.getElementById('poll-options');
@@ -314,11 +363,14 @@
     document.getElementById('poll-enabled').checked = false;
     document.getElementById('poll-fields').hidden = true;
     document.getElementById('poll-question').value = '';
+    document.getElementById('poll-ends').value = '';
     document.getElementById('poll-options').innerHTML = '';
     addPollOption(); addPollOption();
+    updateFormForCategory();
   }
   document.getElementById('poll-enabled').addEventListener('change', (e) => {
     document.getElementById('poll-fields').hidden = !e.target.checked;
+    updateFormForCategory(); // shows that the title and text become optional
   });
   document.getElementById('add-poll-option').addEventListener('click', () => addPollOption());
   resetPoll();
@@ -333,12 +385,14 @@
     const imageFile = document.getElementById('image').files[0];
     const status = document.getElementById('status');
 
-    if(!title || !body){
-      status.textContent = "Title and text are required.";
-      return;
-    }
 
     const pollOn = !isReview && document.getElementById('poll-enabled').checked;
+    if(!pollOn && (!title || !body)){
+      status.textContent = isReview
+        ? "Title and text are required."
+        : "Title and text are required, unless you add a poll to post it on its own.";
+      return;
+    }
     const pollQuestion = document.getElementById('poll-question').value.trim();
     const pollOptions = [...document.querySelectorAll('#poll-options .poll-option')].map(i => i.value.trim()).filter(Boolean);
     if(pollOn){
@@ -347,6 +401,14 @@
       if(new Set(pollOptions.map(o => o.toLowerCase())).size !== pollOptions.length){
         status.textContent = "Each poll option needs to be different."; return;
       }
+    }
+    const endsValue = document.getElementById('poll-ends').value;
+    let pollEndsAt = null;
+    if(pollOn && endsValue){
+      const end = new Date(endsValue);
+      if(isNaN(end.getTime())){ status.textContent = "That end date isn't valid. Pick it again from the calendar."; return; }
+      if(end <= new Date()){ status.textContent = "The poll's end date needs to be in the future."; return; }
+      pollEndsAt = end.toISOString();
     }
 
     let image_url = null;
@@ -363,7 +425,7 @@
 
     const { data: saved, error } = await sb.from('reviews').insert({ title, subject, category, rating, body, image_url }).select().single();
     if(!error && pollOn){
-      const { data: poll, error: pollError } = await sb.from('polls').insert({ review_id: saved.id, question: pollQuestion }).select().single();
+      const { data: poll, error: pollError } = await sb.from('polls').insert({ review_id: saved.id, question: pollQuestion, ends_at: pollEndsAt }).select().single();
       const { error: optError } = pollError ? { error: pollError } :
         await sb.from('poll_options').insert(pollOptions.map((label, position) => ({ poll_id: poll.id, label, position })));
       if(pollError || optError){

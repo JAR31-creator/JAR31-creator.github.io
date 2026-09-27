@@ -688,7 +688,7 @@
       PROFILES.set(session.user.id, profile);
       authDialog.close();
       showToast(`Welcome, ${f}!`);
-      renderAuthBar(); render(currentFilter);
+      renderAuthBar(); loadAll();
     });
   }
 
@@ -710,7 +710,7 @@
     profile = p;
     authDialog.close();
     showToast(`Welcome back${p?.display_name ? ', ' + p.display_name.split(' ')[0] : ''}!`);
-    renderAuthBar(); render(currentFilter);
+    renderAuthBar(); loadAll();
   }
 
   async function forgotPassword(){
@@ -736,7 +736,7 @@
     PROFILES.set(session.user.id, { avatar_icon: profile.avatar_icon, avatar_color: color });
     authDialog.close();
     showToast('Profile picture updated');
-    renderAuthBar(); render(currentFilter);
+    renderAuthBar(); loadAll();
   }
 
   async function initAuth(){
@@ -760,7 +760,7 @@
       document.getElementById('logout-btn').onclick = async () => {
         await sb.auth.signOut();
         session = null; profile = null;
-        renderAuthBar(); render(currentFilter);
+        renderAuthBar(); loadAll();
       };
     } else {
       bar.innerHTML = `<span>Want to comment? <button id="show-login">Log in</button> or <button id="show-signup">Sign up</button></span>`;
@@ -784,22 +784,26 @@
   async function loadAll(){
     const seq = ++loadSeq;
     const [{ data: reviews }, { data: comments }, { data: likes }, { data: commentLikes }, { data: profiles },
-           { data: polls }, { data: pollOptions }, { data: pollVotes }] = await Promise.all([
+           { data: polls }, { data: pollOptions }, { data: pollTotals }, { data: myPollVotes }] = await Promise.all([
       sb.from('reviews').select('*').order('created_at', {ascending:false}),
       sb.from('comments').select('*').order('created_at', {ascending:true}),
       sb.from('likes').select('review_id, type'),
       sb.from('comment_likes').select('comment_id, user_id'),
       sb.from('profiles').select('id, avatar_icon, avatar_color'),
-      sb.from('polls').select('id, review_id, question, closed'),
+      sb.from('polls').select('id, review_id, question, closed, ends_at'),
       sb.from('poll_options').select('id, poll_id, label, position'),
-      sb.from('poll_votes').select('poll_id, option_id, user_id')
+      sb.from('poll_totals').select('option_id, votes'),                                   // counts only, no names
+      session ? sb.from('poll_votes').select('poll_id, option_id') : Promise.resolve({ data: [] }) // just your own vote
     ]);
     if(seq !== loadSeq) return; // a newer refresh already started; drop this stale one
+    const totals = new Map((pollTotals || []).map(t => [t.option_id, t.votes]));
+    const mine = new Map((myPollVotes || []).map(v => [v.poll_id, v.option_id]));
     const pollByReview = new Map();
     (polls || []).forEach(pl => pollByReview.set(pl.review_id, {
       ...pl,
       options: (pollOptions || []).filter(o => o.poll_id === pl.id).sort((a, b) => a.position - b.position)
-        .map(o => ({ ...o, voters: (pollVotes || []).filter(v => v.option_id === o.id).map(v => v.user_id) }))
+        .map(o => ({ ...o, count: totals.get(o.id) || 0 })),
+      myOptionId: mine.get(pl.id) || null
     }));
     PROFILES.clear();
     (profiles || []).forEach(p => PROFILES.set(p.id, p));
@@ -821,6 +825,29 @@
 
     renderFilters();
     render(currentFilter);
+    schedulePollEnd();
+  }
+
+  // ---------- Poll end dates ----------
+  function pollHasEnded(poll){ return !!poll.ends_at && new Date(poll.ends_at).getTime() <= Date.now(); }
+  function formatPollDate(iso, withTime){
+    const d = new Date(iso);
+    return withTime
+      ? d.toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  // Flip a poll to "ended" the moment its deadline passes, even if nobody refreshes the page
+  let pollEndTimer = null;
+  function schedulePollEnd(){
+    clearTimeout(pollEndTimer);
+    const now = Date.now();
+    const next = ALL_REVIEWS.map(r => r.poll)
+      .filter(p => p && p.ends_at && !p.closed)
+      .map(p => new Date(p.ends_at).getTime())
+      .filter(t => t > now)
+      .sort((a, b) => a - b)[0];
+    if(!next) return;
+    pollEndTimer = setTimeout(() => { render(currentFilter); schedulePollEnd(); }, Math.min(next - now + 500, 86400000));
   }
 
   function renderFilters(){
@@ -911,16 +938,17 @@
   let animatePoll = null; // poll whose result bars should grow in after someone's first vote
 
   function renderPoll(poll){
-    const total = poll.options.reduce((n, o) => n + o.voters.length, 0);
-    const myVote = session ? poll.options.find(o => o.voters.includes(session.user.id))?.id : null;
-    const canVote = !!(session && profile) && !poll.closed;
+    const total = poll.options.reduce((n, o) => n + o.count, 0);
+    const myVote = session ? poll.myOptionId : null;
+    const ended = pollHasEnded(poll);
+    const canVote = !!(session && profile) && !poll.closed && !ended;
     const showResults = !!myVote || !canVote;
     const grow = animatePoll === poll.id;
     const options = poll.options.map(o => {
       if(!showResults){
         return `<button type="button" class="poll-opt" data-poll="${poll.id}" data-opt="${o.id}"><span class="poll-label">${escapeHtml(o.label)}</span></button>`;
       }
-      const pct = total ? Math.round(o.voters.length / total * 100) : 0;
+      const pct = total ? Math.round(o.count / total * 100) : 0;
       const mine = o.id === myVote;
       return `<button type="button" class="poll-opt result ${mine ? 'mine' : ''}" data-poll="${poll.id}" data-opt="${o.id}" aria-pressed="${mine}" ${canVote ? '' : 'disabled'}>
           <span class="poll-fill" style="width:${grow ? 0 : pct}%" data-pct="${pct}"></span>
@@ -930,10 +958,12 @@
     }).join('');
     const votes = `${total} ${total === 1 ? 'vote' : 'votes'}`;
     let note;
+    const deadline = poll.ends_at ? ` Voting ends ${formatPollDate(poll.ends_at, true)}.` : '';
     if(poll.closed) note = `${votes}. This poll is closed.`;
-    else if(!session) note = `${votes}. <button type="button" class="poll-login">Log in to vote</button>`;
-    else if(myVote) note = `${votes}. Tap another option to change your vote.`;
-    else note = `${votes}. Tap an option to vote.`;
+    else if(ended) note = `${votes}. Polling ended ${formatPollDate(poll.ends_at, false)}.`;
+    else if(!session) note = `${votes}.${deadline} <button type="button" class="poll-login">Log in to vote</button>`;
+    else if(myVote) note = `${votes}. Tap another option to change your vote.${deadline}`;
+    else note = `${votes}. Tap an option to vote.${deadline}`;
     return `
       <div class="poll" data-poll-id="${poll.id}">
         <div class="poll-q">${escapeHtml(poll.question)}</div>
@@ -1400,14 +1430,14 @@
           <span>${formatDate(r.created_at)}</span>
         </div>
         ${r.image_url ? `
-          <div class="cover" data-id="${r.id}" tabindex="0" role="button" title="Click to enlarge, double-click to like" aria-label="Enlarge cover image for ${escapeHtml(r.title)}">
-            <img src="${r.image_url}" alt="${escapeHtml(r.title)}">
+          <div class="cover" data-id="${r.id}" tabindex="0" role="button" title="Click to enlarge, double-click to like" aria-label="Enlarge cover image for ${escapeHtml(r.title || r.poll?.question || 'this post')}">
+            <img src="${r.image_url}" alt="${escapeHtml(r.title || r.poll?.question || '')}">
             <div class="burst" aria-hidden="true">❤️</div>
           </div>` : ''}
-        <h2>${r.title}</h2>
-        <div class="subject">${r.subject || ''}</div>
+        ${r.title ? `<h2>${r.title}</h2>` : ''}
+        ${r.subject ? `<div class="subject">${r.subject}</div>` : ''}
         ${r.rating != null ? `<div class="stars">${stars(r.rating)}</div>` : ''}
-        <p class="body">${r.body}</p>
+        ${r.body ? `<p class="body">${r.body}</p>` : ''}
         ${r.poll ? renderPoll(r.poll) : ''}
         <div class="actions">
           <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="Like"><span class="heart">❤️</span> ${r.likeCount}</button>
@@ -1463,13 +1493,20 @@
         const pollId = btn.dataset.poll, optId = btn.dataset.opt;
         const poll = ALL_REVIEWS.find(r => r.poll && r.poll.id === pollId)?.poll;
         if(!poll || poll.closed || !session) return;
-        const current = poll.options.find(o => o.voters.includes(session.user.id));
-        if(current && current.id === optId) return;
+        if(pollHasEnded(poll)){ showToast('Voting has ended for this poll.'); render(currentFilter); return; }
+        const current = poll.myOptionId;
+        if(current === optId) return;
         container.querySelectorAll(`.poll[data-poll-id="${pollId}"] .poll-opt`).forEach(b => { b.disabled = true; });
         const { error } = current
           ? await sb.from('poll_votes').update({ option_id: optId }).eq('poll_id', pollId).eq('user_id', session.user.id)
           : await sb.from('poll_votes').insert({ poll_id: pollId, option_id: optId, user_id: session.user.id });
-        if(error){ showToast("Couldn't save your vote: " + error.message, true); loadAll(); return; }
+        if(error){
+          // the database checks the deadline too, so a vote cast in the final seconds can land just after it
+          const lateVote = poll.ends_at && new Date(poll.ends_at).getTime() <= Date.now() + 60000;
+          showToast(lateVote ? 'Voting has ended for this poll.' : "Couldn't save your vote: " + error.message, !lateVote);
+          loadAll();
+          return;
+        }
         if(!current) animatePoll = pollId;
         loadAll();
       });
