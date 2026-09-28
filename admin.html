@@ -32,16 +32,27 @@
   .poll-end-label{display:block;font-size:0.85rem;font-weight:600;margin:4px 0 4px;}
   .poll-hint{font-size:0.8rem;color:#6B655C;margin:-6px 0 12px;}
   .row-title{flex:1;min-width:0;}
+  .row-date{display:block;font-size:0.75rem;color:#777;margin-bottom:1px;}
+  .manage-row button.edit-btn{background:#eee;color:#1C1B19;border:1px solid #ccc;}
+  .month-group .manage-row{padding-left:14px;}
+  #current-image{display:flex;gap:12px;align-items:center;margin-bottom:10px;}
+  #current-image img{max-width:80px;max-height:100px;border:1px solid #ddd;border-radius:4px;}
+  .inline-check{display:flex;align-items:center;gap:6px;font-size:0.9rem;cursor:pointer;}
+  .inline-check input{width:auto;margin:0;}
+  .form-actions{display:flex;gap:8px;align-items:center;}
+  .form-actions button{margin-bottom:0;}
+  #manage-search{margin-bottom:6px;}
+  .editing-now{outline:2px solid #1C1B19;outline-offset:2px;border-radius:4px;}
   .end-edit{margin-top:6px;font-size:0.82rem;}
   .end-edit summary{cursor:pointer;color:#555;}
   .end-edit input{width:auto;margin:6px 6px 0 0;padding:5px;}
   .manage-row .end-edit button{background:#eee;color:#1C1B19;border:1px solid #ccc;margin:6px 6px 0 0;}
   button.secondary{background:#eee;border:1px solid #ccc;border-radius:4px;margin-bottom:12px;}
   .date-group{margin-top:8px;}
-  .date-group summary{font-weight:600;font-size:0.85rem;cursor:pointer;padding:6px 0;color:#333;list-style:none;user-select:none;}
-  .date-group summary::-webkit-details-marker{display:none;}
-  .date-group summary::before{content:'▶';display:inline-block;margin-right:6px;font-size:0.65rem;transition:transform 0.15s;}
-  .date-group[open] summary::before{transform:rotate(90deg);}
+  .date-group > summary{font-weight:600;font-size:0.85rem;cursor:pointer;padding:6px 0;color:#333;list-style:none;user-select:none;}
+  .date-group > summary::-webkit-details-marker{display:none;}
+  .date-group > summary::before{content:'▶';display:inline-block;margin-right:6px;font-size:0.65rem;transition:transform 0.15s;}
+  .date-group[open] > summary::before{transform:rotate(90deg);}
   .date-group .count{color:#888;font-weight:400;font-size:0.78rem;}
 </style>
 </head>
@@ -104,12 +115,24 @@
       <p class="poll-hint">Leave this blank to keep the poll open until you close it yourself.</p>
     </div>
   </div>
+  <p id="poll-locked-note" class="poll-hint" hidden>This post's poll question and choices can't be changed after publishing, so votes stay fair. You can still change its end date or close it from your list below.</p>
   <label style="font-size:0.85rem;display:block;margin-bottom:4px;">Cover image (optional)</label>
+  <div id="current-image" hidden>
+    <img id="current-image-thumb" alt="Current cover image">
+    <div>
+      <label class="inline-check"><input type="checkbox" id="remove-image"> Remove this image</label>
+      <span class="poll-hint">Or choose a new file below to replace it.</span>
+    </div>
+  </div>
   <input id="image" type="file" accept="image/*">
-  <button onclick="submitReview()">Publish</button>
+  <div class="form-actions">
+    <button id="publish-btn" onclick="submitReview()">Publish</button>
+    <button id="cancel-edit-btn" type="button" class="secondary" onclick="stopEdit()" hidden>Cancel editing</button>
+  </div>
   <div id="status"></div>
 
   <h1 style="margin-top:40px;">Manage reviews</h1>
+  <input id="manage-search" type="search" placeholder="Search your posts by title, category, or poll question" oninput="renderManageList()">
   <div id="manage-list">Loading…</div>
 
   <h1 style="margin-top:40px;">Manage comments</h1>
@@ -153,6 +176,9 @@
     document.getElementById('login-status').textContent = '';
   }
 
+  let manageData = { reviews: [], pollFor: new Map() };
+  let openMonths = null; // which month groups are expanded; null until you open or close one
+
   async function loadManageList(){
     const list = document.getElementById('manage-list');
     const [{ data, error }, { data: polls }] = await Promise.all([
@@ -160,19 +186,23 @@
       sb.from('polls').select('id, review_id, closed, question, ends_at')
     ]);
     if(error){ list.textContent = 'Error loading reviews.'; return; }
-    if(!data.length){ list.textContent = 'No reviews yet.'; return; }
-    const pollFor = new Map((polls || []).map(p => [p.review_id, p]));
-    list.innerHTML = data.map(r => {
-      const poll = pollFor.get(r.id);
-      const ended = !!(poll && poll.ends_at && new Date(poll.ends_at) <= new Date());
-      const pollStatus = !poll ? ''
-        : poll.closed ? ', poll closed'
-        : ended ? `, poll ended ${formatWhen(poll.ends_at)}`
-        : poll.ends_at ? `, poll open until ${formatWhen(poll.ends_at)}`
-        : ', poll open';
-      return `
-      <div class="manage-row">
-        <span class="row-title">${r.title || (poll ? 'Poll: ' + escapeHtml(poll.question) : '(untitled)')} <em>(${r.category}${pollStatus})</em>
+    manageData = { reviews: data || [], pollFor: new Map((polls || []).map(p => [p.review_id, p])) };
+    renderManageList();
+  }
+
+  function manageRowHTML(r){
+    const poll = manageData.pollFor.get(r.id);
+    const ended = !!(poll && poll.ends_at && new Date(poll.ends_at) <= new Date());
+    const pollStatus = !poll ? ''
+      : poll.closed ? ', poll closed'
+      : ended ? `, poll ended ${formatWhen(poll.ends_at)}`
+      : poll.ends_at ? `, poll open until ${formatWhen(poll.ends_at)}`
+      : ', poll open';
+    const label = r.title || (poll ? 'Poll: ' + poll.question : '(untitled)');
+    const posted = new Date(r.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `
+      <div class="manage-row ${editing && editing.id === r.id ? 'editing-now' : ''}">
+        <span class="row-title"><span class="row-date">${posted}</span><span class="row-label">${escapeHtml(label)}</span> <em>(${r.category}${pollStatus})</em>
           ${poll ? `
           <details class="end-edit">
             <summary>${poll.ends_at ? 'Change end date' : 'Add an end date'}</summary>
@@ -182,11 +212,43 @@
           </details>` : ''}
         </span>
         <span class="row-actions">
+          <button class="edit-btn" data-id="${r.id}">${editing && editing.id === r.id ? 'Editing…' : 'Edit'}</button>
           ${poll && !ended ? `<button class="poll-btn" data-poll="${poll.id}" data-closed="${poll.closed ? '1' : ''}">${poll.closed ? 'Reopen poll' : 'Close poll'}</button>` : ''}
           <button class="del-btn" data-id="${r.id}">Delete</button>
         </span>
       </div>`;
-    }).join('');
+  }
+
+  function renderManageList(){
+    const list = document.getElementById('manage-list');
+    const query = document.getElementById('manage-search').value.trim().toLowerCase();
+    if(!manageData.reviews.length){ list.textContent = 'No posts yet.'; return; }
+    const matches = [...manageData.reviews].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).filter(r => {
+      if(!query) return true;
+      const poll = manageData.pollFor.get(r.id);
+      return [r.title, r.subject, r.category, poll && poll.question].some(v => v && v.toLowerCase().includes(query));
+    });
+    if(!matches.length){ list.innerHTML = `<p class="poll-hint">No posts match "${escapeHtml(query)}".</p>`; return; }
+
+    const groups = [];
+    matches.forEach(r => {
+      const month = new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const last = groups[groups.length - 1];
+      if(last && last.month === month) last.items.push(r); else groups.push({ month, items: [r] });
+    });
+    const isOpen = (month, i) => query ? true : openMonths ? openMonths.has(month) : i === 0; // searching opens everything
+    list.innerHTML = groups.map((g, i) => `
+      <details class="date-group month-group" data-month="${g.month}" ${isOpen(g.month, i) ? 'open' : ''}>
+        <summary>${g.month} <span class="count">(${g.items.length})</span></summary>
+        ${g.items.map(manageRowHTML).join('')}
+      </details>`).join('');
+
+    list.querySelectorAll('.month-group').forEach(d => d.addEventListener('toggle', () => {
+      if(query) return;
+      if(!openMonths) openMonths = new Set([...list.querySelectorAll('.month-group[open]')].map(x => x.dataset.month));
+      if(d.open) openMonths.add(d.dataset.month); else openMonths.delete(d.dataset.month);
+    }));
+    list.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => startEdit(btn.dataset.id)));
     const setPollEnd = async (pollId, endsAt) => {
       const { error } = await sb.from('polls').update({ ends_at: endsAt }).eq('id', pollId);
       if(error){ alert("Couldn't update the end date: " + error.message); return; }
@@ -207,10 +269,12 @@
     });
     list.querySelectorAll('.del-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if(!confirm('Delete "' + btn.closest('.manage-row').querySelector('.row-title').firstChild.textContent.trim() + '"? This also removes its comments, likes, and any poll.')) return;
+        const label = btn.closest('.manage-row').querySelector('.row-label').textContent.trim();
+        if(!confirm('Delete "' + label + '"? This also removes its comments, likes, and any poll.')) return;
         const { data, error } = await sb.from('reviews').delete().eq('id', btn.dataset.id).select();
         if(error){ alert('Delete failed: ' + error.message); return; }
-        if(!data || data.length === 0){ alert('Nothing was deleted — this usually means your admin delete policy on the reviews table has the wrong User UID. Check Database → Policies → "admin write reviews".'); return; }
+        if(!data || data.length === 0){ alert('Nothing was deleted. This usually means your admin delete policy on the reviews table has the wrong User UID. Check Database, then Policies, then "admin write reviews".'); return; }
+        if(editing && editing.id === btn.dataset.id) stopEdit();
         loadManageList();
         loadCommentsList();
       });
@@ -305,6 +369,7 @@
     }
   }
 
+  let editing = null; // { id, image_url, hasPoll } while editing a published post, otherwise null
   const NON_REVIEW = ['announcement', 'post'];
   const FORM_COPY = {
     review:       { heading: 'Add a review',        title: 'Title (e.g. Past Lives)',               subject: 'Subject line (e.g. Directed by Celine Song, 2023)', body: 'Your review' },
@@ -325,7 +390,9 @@
       document.getElementById('body').placeholder = copy.body + ' (optional with a poll)';
     }
     document.getElementById('rating').hidden = key !== 'review';
-    document.getElementById('poll-section').hidden = key === 'review';
+    document.getElementById('poll-section').hidden = key === 'review' || !!editing;
+    document.getElementById('poll-locked-note').hidden = !(editing && editing.hasPoll);
+    if(editing) document.getElementById('form-heading').textContent = key === 'review' ? 'Edit review' : 'Edit ' + key;
   }
 
   // ---------- Poll builder ----------
@@ -375,6 +442,51 @@
   document.getElementById('add-poll-option').addEventListener('click', () => addPollOption());
   resetPoll();
 
+  // ---------- Editing a published post ----------
+
+  function startEdit(id){
+    const r = manageData.reviews.find(x => x.id === id);
+    if(!r) return;
+    const poll = manageData.pollFor.get(id);
+    editing = { id, image_url: r.image_url || null, hasPoll: !!poll };
+    document.getElementById('category').value = r.category;
+    // a post with a poll stays a post or announcement, since reviews can't have polls
+    document.querySelectorAll('#category optgroup[label="Reviews"] option').forEach(o => { o.disabled = !!poll; });
+    document.getElementById('title').value = r.title || '';
+    document.getElementById('subject').value = r.subject || '';
+    document.getElementById('body').value = r.body || '';
+    if(r.rating != null) document.getElementById('rating').value = String(parseFloat(r.rating));
+    document.getElementById('image').value = '';
+    document.getElementById('remove-image').checked = false;
+    document.getElementById('current-image').hidden = !r.image_url;
+    if(r.image_url) document.getElementById('current-image-thumb').src = r.image_url;
+    document.getElementById('publish-btn').textContent = 'Save changes';
+    document.getElementById('cancel-edit-btn').hidden = false;
+    document.getElementById('status').textContent = '';
+    updateFormForCategory();
+    renderManageList();
+    document.getElementById('form-heading').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function stopEdit(){
+    editing = null;
+    document.querySelectorAll('#category option').forEach(o => { o.disabled = false; });
+    ['title', 'subject', 'body', 'image'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('remove-image').checked = false;
+    document.getElementById('current-image').hidden = true;
+    document.getElementById('publish-btn').textContent = 'Publish';
+    document.getElementById('cancel-edit-btn').hidden = true;
+    resetPoll(); // also refreshes the heading and hints for the selected category
+    renderManageList();
+  }
+
+  // Remove a replaced or removed cover image from storage (best effort)
+  async function deleteStoredImage(url){
+    const marker = '/review-images/';
+    if(!url || !url.includes(marker)) return;
+    await sb.storage.from('review-images').remove([decodeURIComponent(url.split(marker)[1].split('?')[0])]);
+  }
+
   async function submitReview(){
     const title = document.getElementById('title').value.trim();
     const subject = document.getElementById('subject').value.trim();
@@ -386,8 +498,9 @@
     const status = document.getElementById('status');
 
 
-    const pollOn = !isReview && document.getElementById('poll-enabled').checked;
-    if(!pollOn && (!title || !body)){
+    const pollOn = !editing && !isReview && document.getElementById('poll-enabled').checked;
+    const hasPoll = pollOn || !!(editing && editing.hasPoll);
+    if(!hasPoll && (!title || !body)){
       status.textContent = isReview
         ? "Title and text are required."
         : "Title and text are required, unless you add a poll to post it on its own.";
@@ -411,7 +524,8 @@
       pollEndsAt = end.toISOString();
     }
 
-    let image_url = null;
+    const removeImage = !!editing && document.getElementById('remove-image').checked;
+    let image_url = editing && !removeImage ? editing.image_url : null;
     if(imageFile){
       status.textContent = "Uploading image…";
       const path = Date.now() + '-' + imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
@@ -421,6 +535,21 @@
         return;
       }
       image_url = sb.storage.from('review-images').getPublicUrl(path).data.publicUrl;
+    }
+
+    if(editing){
+      const { data: updated, error: updateError } = await sb.from('reviews')
+        .update({ title, subject, category, rating, body, image_url }).eq('id', editing.id).select();
+      if(updateError){ status.textContent = "Couldn't save your changes: " + updateError.message; return; }
+      if(!updated || !updated.length){
+        status.textContent = 'Nothing was saved. This usually means the "admin write reviews" policy has the wrong User UID.';
+        return;
+      }
+      if(editing.image_url && editing.image_url !== image_url) deleteStoredImage(editing.image_url);
+      stopEdit();
+      status.textContent = "Saved! Your changes are live.";
+      loadManageList();
+      return;
     }
 
     const { data: saved, error } = await sb.from('reviews').insert({ title, subject, category, rating, body, image_url }).select().single();
