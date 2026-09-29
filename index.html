@@ -18,6 +18,7 @@
 <style>
   :root{
     color-scheme:light;
+    --outer:#D2CAB9; --frame-edge:#C4BBA8;
     --desk:#E7E2D6; --paper:#FBF9F5; --sheet-edge:#D8D1C3;
     --ink:#1C1B19; --ink-soft:#5A5751; --rule:#DEDACF;
     --surface:#FFFFFF; --bubble:#EFEBE2; --tint:#F1EDE3;
@@ -28,24 +29,36 @@
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme:dark;
-      --desk:#141311; --paper:#1E1D1A; --sheet-edge:#2F2C28;
+      --outer:#080807; --frame-edge:#3A3631;
+      --desk:#161513; --paper:#211F1C; --sheet-edge:#322F2A;
       --ink:#ECE7DD; --ink-soft:#A8A298; --rule:#37342F;
       --surface:#262520; --bubble:#2E2C28; --tint:#25231F;
-      --nav-bg:rgba(20,19,17,0.9); --shadow:rgba(0,0,0,0.45);
+      --nav-bg:rgba(22,21,19,0.92); --shadow:rgba(0,0,0,0.45);
       --sk-a:#262420; --sk-b:#302D29; --fresh:#4A3F22;
     }
   }
   :root[data-theme="dark"]{
     color-scheme:dark;
-    --desk:#141311; --paper:#1E1D1A; --sheet-edge:#2F2C28;
+    --outer:#080807; --frame-edge:#3A3631;
+      --desk:#161513; --paper:#211F1C; --sheet-edge:#322F2A;
       --ink:#ECE7DD; --ink-soft:#A8A298; --rule:#37342F;
     --surface:#262520; --bubble:#2E2C28; --tint:#25231F;
-    --nav-bg:rgba(20,19,17,0.9); --shadow:rgba(0,0,0,0.45);
+    --nav-bg:rgba(22,21,19,0.92); --shadow:rgba(0,0,0,0.45);
     --sk-a:#262420; --sk-b:#302D29; --fresh:#4A3F22;
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--desk);transition:background-color .2s, color .2s;color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
-  header{max-width:680px;margin:0 auto;padding:56px 24px 24px;}
+  body{margin:0;background:var(--outer);transition:background-color .2s, color .2s;color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
+  .page-frame{display:flow-root;max-width:960px;margin:0 auto;min-height:100vh;background:var(--desk);border-left:1px solid var(--frame-edge);border-right:1px solid var(--frame-edge);transition:background-color .2s;}
+  header{width:calc(100% - 48px);max-width:632px;margin:28px auto 18px;padding:64px 28px 26px;background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--ink);border-radius:3px;}
+  .site-logo{position:absolute;top:12px;left:14px;width:44px;height:44px;display:block;z-index:25;border-radius:12px;transition:transform .15s ease;}
+  .site-logo svg{display:block;width:100%;height:100%;}
+  .site-logo:hover{transform:translateY(-2px) rotate(-3deg);}
+  .site-logo:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+  @media (min-width: 900px){
+    header{padding-top:36px;}
+    .site-logo{position:fixed;top:24px;left:max(16px, calc(50% - 440px));width:72px;height:72px;border-radius:18px;}
+  }
+  @media (max-width: 960px){ .page-frame{border-left:none;border-right:none;} }
   h1{font-family:'Newsreader',serif;font-weight:600;font-size:2.4rem;margin:0 0 6px;}
   header p{color:var(--ink-soft);margin:0;font-size:0.95rem;}
   nav{max-width:680px;margin:0 auto;padding:0 24px 32px;display:flex;gap:18px;padding-bottom:14px;}
@@ -63,7 +76,10 @@
   .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;margin-bottom:10px;line-height:1;}
   .stars .stars-back{color:var(--rule);}
   .stars .stars-front{color:var(--ink);position:absolute;top:0;left:0;overflow:hidden;white-space:nowrap;}
-  .entry p.body{margin:0 0 16px;max-width:62ch;}
+  .entry .body{margin:0 0 16px;max-width:62ch;}
+  .rich p{margin:0;}
+  .rich ul, .rich ol{margin:0;padding-left:1.4em;}
+  .rich b, .rich strong{font-weight:700;}
   .actions{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
   .like-btn{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:1px solid var(--rule);border-radius:20px;padding:5px 14px;cursor:pointer;color:var(--ink);}
   .like-btn.liked{background:var(--ink);color:var(--paper);border-color:var(--ink);}
@@ -204,7 +220,7 @@
     .comment-toolbar button{padding:5px;}
   }
   @media (max-width: 560px){
-    header{padding:40px 16px 18px;}
+    header{width:calc(100% - 20px);margin:10px auto 14px;padding:60px 18px 20px;}
     .settings{top:8px;right:10px;}
     h1{font-size:2rem;padding-right:36px;}
     nav, main, footer, #authbar{padding-left:16px;padding-right:16px;}
@@ -284,7 +300,19 @@
 </head>
 <body>
 
+<div class="page-frame">
 <header>
+  <a href="#top" class="site-logo" id="site-logo" title="Back to the top" aria-label="Just Some Reviews: back to the top">
+    <svg viewBox="0 0 72 72" aria-hidden="true">
+      <rect x="1" y="1" width="70" height="70" rx="17" style="fill:var(--ink)"/>
+      <rect x="5.5" y="5.5" width="61" height="61" rx="13" style="fill:none;stroke:var(--paper);stroke-opacity:.3" stroke-width="1"/>
+      <text x="36" y="42" text-anchor="middle" style="fill:var(--paper);font-family:'Newsreader',Georgia,serif;font-style:italic;font-weight:600;font-size:25px;letter-spacing:-0.5px">JSR</text>
+      <circle cx="25.5" cy="53" r="2.4" style="fill:var(--film)"/>
+      <circle cx="32.5" cy="53" r="2.4" style="fill:var(--tv)"/>
+      <circle cx="39.5" cy="53" r="2.4" style="fill:var(--game)"/>
+      <circle cx="46.5" cy="53" r="2.4" style="fill:var(--music)"/>
+    </svg>
+  </a>
   <div class="settings">
     <button id="settings-btn" type="button" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="settings-panel">
       <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor"><circle cx="10" cy="10" r="6.9" stroke-width="2.6" stroke-dasharray="2.71 2.71"/><circle cx="10" cy="10" r="5.3" stroke-width="1.5"/><circle cx="10" cy="10" r="2" stroke-width="1.5"/></svg>
@@ -306,6 +334,7 @@
 <div id="authbar"></div>
 <main id="entries" aria-busy="true"><div class="skeleton"><div class="sk sk-meta"></div><div class="sk sk-title"></div><div class="sk sk-line w90"></div><div class="sk sk-line w70"></div></div><div class="skeleton"><div class="sk sk-meta"></div><div class="sk sk-title"></div><div class="sk sk-line w90"></div><div class="sk sk-line w70"></div></div></main>
 <footer>Updated by hand. New entries go straight into the source.</footer>
+</div>
 
 <div id="lightbox"><img id="lightbox-img" src="" alt="Full size image"></div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1400,7 +1429,7 @@
       toggleEditForm(id, found.body, c, false);
       textareas.edits[id] = fill(c.querySelector('.edit-form'), saved);
     }
-    if(state.anchor){
+    if(state.anchor && !goingHome){
       const el = container.querySelector(state.anchor.selector);
       if(el){
         const shift = el.getBoundingClientRect().top - state.anchor.top;
@@ -1416,6 +1445,7 @@
     }
   }
 
+  let goingHome = false; // true while the JSR logo scrolls to the top, so refreshes don't hold the old scroll spot
   let knownCommentIds = null; // comments already seen, so brand-new ones can get a brief highlight
 
   function render(filter){
@@ -1445,7 +1475,7 @@
             <img src="${r.image_url}" alt="${escapeHtml(r.title || r.poll?.question || '')}">
             <div class="burst" aria-hidden="true">❤️</div>
           </div>` : ''}
-          ${r.body ? `<p class="body">${r.body}</p>` : ''}
+          ${r.body ? `<div class="body rich">${bodyToHTML(r.body)}</div>` : ''}
         </div>
         ${r.poll ? renderPoll(r.poll) : ''}
         <div class="actions">
@@ -1607,11 +1637,68 @@
     document.getElementById('lightbox').classList.add('open');
   }
 
+  // ---------- Formatted review text ----------
+  // Only the formatting the admin toolbar can make is kept; anything else (scripts, links, images, odd styles) is dropped.
+  const RICH_TAGS = new Set(['P', 'BR', 'DIV', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'STRIKE', 'UL', 'OL', 'LI', 'SPAN', 'FONT']);
+  const RICH_SIZES = new Set(['0.85em', '1.25em', '1.6em']);
+  const DROP_WITH_CONTENTS = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'TEMPLATE', 'NOSCRIPT', 'SVG', 'MATH', 'TEXTAREA', 'SELECT', 'BUTTON']);
+  function sanitizeRichText(html){
+    const tpl = document.createElement('template'); // parsed without running anything or loading anything
+    tpl.innerHTML = html;
+    const clean = (parent) => {
+      [...parent.childNodes].forEach(node => {
+        if(node.nodeType === Node.TEXT_NODE) return;
+        if(node.nodeType !== Node.ELEMENT_NODE){ node.remove(); return; }
+        const tag = node.tagName.toUpperCase();
+        if(DROP_WITH_CONTENTS.has(tag)){ node.remove(); return; }
+        clean(node);
+        if(!RICH_TAGS.has(tag)){ node.replaceWith(...node.childNodes); return; } // keep the words, drop the tag
+        let color = null, size = null;
+        if(tag === 'SPAN' || tag === 'FONT'){
+          const style = node.getAttribute('style') || '';
+          const c = /(?:^|;)\s*color\s*:\s*(#[0-9a-f]{3,8}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))/i.exec(style)
+                 || (tag === 'FONT' && /^(#[0-9a-f]{3,8})$/i.exec(node.getAttribute('color') || ''));
+          const z = /(?:^|;)\s*font-size\s*:\s*([\d.]+em)/i.exec(style);
+          if(c) color = c[1];
+          if(z && RICH_SIZES.has(z[1])) size = z[1];
+        }
+        if(tag === 'FONT' || tag === 'SPAN'){
+          if(!color && !size){ node.replaceWith(...node.childNodes); return; } // a span with no formatting adds nothing
+          const span = document.createElement('span');
+          if(color) span.style.color = color;
+          if(size) span.style.fontSize = size;
+          span.append(...node.childNodes);
+          node.replaceWith(span);
+          return;
+        }
+        [...node.attributes].forEach(a => node.removeAttribute(a.name));
+      });
+    };
+    clean(tpl.content);
+    tpl.content.querySelectorAll('p:empty, div:empty').forEach(el => el.remove());
+    return tpl.innerHTML;
+  }
+  // Older reviews were saved as plain text; show each line on its own, with blank lines kept
+  function bodyToHTML(body){
+    if(!body) return '';
+    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span)\b/i.test(body)) return sanitizeRichText(body);
+    return body.split('\n').map(line => `<p>${escapeHtml(line) || '<br>'}</p>`).join('');
+  }
+
   function escapeHtml(str){
     const d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
   }
+
+  // The JSR logo works like a home button: back to the top, back to "All", fresh posts
+  document.getElementById('site-logo').addEventListener('click', (e) => {
+    e.preventDefault();
+    goingHome = true;
+    if(currentFilter !== 'all'){ currentFilter = 'all'; renderFilters(); render(currentFilter); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    loadAll().finally(() => setTimeout(() => { goingHome = false; }, 1000));
+  });
 
   document.getElementById('lightbox').addEventListener('click', () => {
     document.getElementById('lightbox').classList.remove('open');

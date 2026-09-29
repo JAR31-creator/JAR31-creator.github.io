@@ -13,9 +13,24 @@
   h1{font-size:1.4rem;}
   input, select, textarea{width:100%;padding:8px;margin-bottom:12px;font-size:0.95rem;box-sizing:border-box;}
   input, select, textarea, button{font-family:inherit;}
-  #body{font-family:'Nunito', system-ui, sans-serif;font-size:1.08rem;line-height:1.65;min-height:240px;padding:14px 16px;border:1px solid #D8D1C3;border-radius:10px;background:#FFFDF9;color:#1C1B19;resize:vertical;}
-  #body:focus{outline:none;border-color:#8C857A;}
-  #body::placeholder{color:#9A938A;}
+  .editor{border:1px solid #D8D1C3;border-radius:10px;background:#FFFDF9;margin-bottom:12px;}
+  .editor:focus-within{border-color:#8C857A;}
+  .editor-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid #E6E0D4;background:#F7F3EB;border-radius:10px 10px 0 0;}
+  .editor-toolbar button, .editor-toolbar select{width:auto;margin:0;padding:5px 9px;font-size:0.85rem;background:#FFFDF9;border:1px solid transparent;border-radius:6px;color:#1C1B19;}
+  .editor-toolbar button:hover, .editor-toolbar select:hover{border-color:#D8D1C3;}
+  .editor-toolbar button[aria-pressed="true"]{background:#1C1B19;color:#FFFDF9;}
+  .tb-sep{width:1px;height:20px;background:#DDD6C9;margin:0 3px;}
+  .color-wrap{position:relative;display:inline-block;}
+  #fmt-color-btn{display:inline-flex;flex-direction:column;align-items:center;font-weight:600;line-height:1.1;}
+  .color-bar{display:block;width:16px;height:3px;border-radius:2px;background:#1C1B19;margin-top:1px;}
+  .color-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:10;display:grid;grid-template-columns:repeat(5, 26px);gap:6px;padding:10px;background:#fff;border:1px solid #D8D1C3;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.12);}
+  .color-pop[hidden]{display:none;}
+  .color-pop button{width:26px;height:26px;padding:0;border-radius:50%;border:1px solid rgba(0,0,0,.15);}
+  .color-pop .default-color{grid-column:1 / -1;width:auto;height:auto;border-radius:6px;padding:4px 8px;font-size:0.8rem;background:#F7F3EB;}
+  .editor-area{position:relative;font-family:'Nunito', system-ui, sans-serif;font-size:1.08rem;line-height:1.65;min-height:240px;max-height:70vh;overflow-y:auto;padding:14px 16px;color:#1C1B19;outline:none;}
+  .editor-area p{margin:0;}
+  .editor-area ul, .editor-area ol{margin:0;padding-left:1.4em;}
+  .editor-area.is-empty::before{content:attr(data-placeholder);position:absolute;top:14px;left:16px;color:#9A938A;pointer-events:none;}
   button{padding:8px 16px;cursor:pointer;}
   #status{margin-top:10px;font-size:0.9rem;}
   #app{display:none;}
@@ -103,7 +118,31 @@
     <option value="1.5">1.5 stars</option>
     <option value="1">1 star</option>
   </select>
-  <textarea id="body" placeholder="Your review"></textarea>
+  <div class="editor">
+    <div class="editor-toolbar" role="toolbar" aria-label="Text formatting">
+      <select id="fmt-size" aria-label="Text size" title="Text size">
+        <option value="" selected disabled>Size</option>
+        <option value="small">Small</option>
+        <option value="normal">Normal</option>
+        <option value="large">Large</option>
+        <option value="huge">Huge</option>
+      </select>
+      <span class="tb-sep" aria-hidden="true"></span>
+      <button type="button" data-cmd="bold" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
+      <button type="button" data-cmd="underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+      <button type="button" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
+      <span class="color-wrap">
+        <button type="button" id="fmt-color-btn" title="Text color" aria-label="Text color" aria-expanded="false">A<span class="color-bar" id="fmt-color-bar"></span></button>
+        <div id="fmt-colors" class="color-pop" hidden></div>
+      </span>
+      <span class="tb-sep" aria-hidden="true"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list" aria-label="Bulleted list">&bull; List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list" aria-label="Numbered list">1. List</button>
+      <button type="button" data-cmd="removeFormat" title="Clear formatting from selected text" aria-label="Clear formatting">Clear</button>
+    </div>
+    <div id="body" class="editor-area is-empty" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post text" data-placeholder="Your review"></div>
+  </div>
   <div id="poll-section" hidden>
     <label class="poll-toggle"><input type="checkbox" id="poll-enabled"> Add a poll</label>
     <div id="poll-fields" hidden>
@@ -281,6 +320,179 @@
     });
   }
 
+  // ---------- Formatted review text ----------
+  // Only the formatting the admin toolbar can make is kept; anything else (scripts, links, images, odd styles) is dropped.
+  const RICH_TAGS = new Set(['P', 'BR', 'DIV', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'STRIKE', 'UL', 'OL', 'LI', 'SPAN', 'FONT']);
+  const RICH_SIZES = new Set(['0.85em', '1.25em', '1.6em']);
+  const DROP_WITH_CONTENTS = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'TEMPLATE', 'NOSCRIPT', 'SVG', 'MATH', 'TEXTAREA', 'SELECT', 'BUTTON']);
+  function sanitizeRichText(html){
+    const tpl = document.createElement('template'); // parsed without running anything or loading anything
+    tpl.innerHTML = html;
+    const clean = (parent) => {
+      [...parent.childNodes].forEach(node => {
+        if(node.nodeType === Node.TEXT_NODE) return;
+        if(node.nodeType !== Node.ELEMENT_NODE){ node.remove(); return; }
+        const tag = node.tagName.toUpperCase();
+        if(DROP_WITH_CONTENTS.has(tag)){ node.remove(); return; }
+        clean(node);
+        if(!RICH_TAGS.has(tag)){ node.replaceWith(...node.childNodes); return; } // keep the words, drop the tag
+        let color = null, size = null;
+        if(tag === 'SPAN' || tag === 'FONT'){
+          const style = node.getAttribute('style') || '';
+          const c = /(?:^|;)\s*color\s*:\s*(#[0-9a-f]{3,8}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))/i.exec(style)
+                 || (tag === 'FONT' && /^(#[0-9a-f]{3,8})$/i.exec(node.getAttribute('color') || ''));
+          const z = /(?:^|;)\s*font-size\s*:\s*([\d.]+em)/i.exec(style);
+          if(c) color = c[1];
+          if(z && RICH_SIZES.has(z[1])) size = z[1];
+        }
+        if(tag === 'FONT' || tag === 'SPAN'){
+          if(!color && !size){ node.replaceWith(...node.childNodes); return; } // a span with no formatting adds nothing
+          const span = document.createElement('span');
+          if(color) span.style.color = color;
+          if(size) span.style.fontSize = size;
+          span.append(...node.childNodes);
+          node.replaceWith(span);
+          return;
+        }
+        [...node.attributes].forEach(a => node.removeAttribute(a.name));
+      });
+    };
+    clean(tpl.content);
+    tpl.content.querySelectorAll('p:empty, div:empty').forEach(el => el.remove());
+    return tpl.innerHTML;
+  }
+  // Older reviews were saved as plain text; show each line on its own, with blank lines kept
+  function bodyToHTML(body){
+    if(!body) return '';
+    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span)\b/i.test(body)) return sanitizeRichText(body);
+    return body.split('\n').map(line => `<p>${escapeHtml(line) || '<br>'}</p>`).join('');
+  }
+
+  const editor = document.getElementById('body');
+  const EDITOR_COLORS = [
+    ['Red', '#D64541'], ['Orange', '#E4772E'], ['Gold', '#C99A1E'], ['Green', '#2E8B57'], ['Teal', '#2F8F8E'],
+    ['Blue', '#2F6DB5'], ['Purple', '#7B57B0'], ['Pink', '#D9558F'], ['Brown', '#8C5A3C'], ['Gray', '#7A756C']
+  ];
+  const SIZE_VALUES = { small: '0.85em', large: '1.25em', huge: '1.6em' };
+  let savedRange = null;
+
+  function editorIsEmpty(){ return !editor.textContent.trim() && !editor.querySelector('li'); }
+  function refreshPlaceholder(){ editor.classList.toggle('is-empty', editorIsEmpty()); }
+  function getBodyHTML(){ return editorIsEmpty() ? '' : sanitizeRichText(editor.innerHTML).trim(); }
+  function setBodyHTML(body){
+    editor.innerHTML = bodyToHTML(body) || '<p><br></p>';
+    refreshPlaceholder();
+  }
+
+  // Toolbar clicks move focus away from the text; remember and restore the selection so formatting lands where you meant
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if(sel.rangeCount && editor.contains(sel.anchorNode)){ savedRange = sel.getRangeAt(0).cloneRange(); updateToolbarState(); }
+  });
+  function restoreSelection(){
+    editor.focus();
+    if(savedRange){
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+  }
+  function updateToolbarState(){
+    document.querySelectorAll('.editor-toolbar [data-cmd]').forEach(btn => {
+      if(btn.dataset.cmd === 'removeFormat') return;
+      let on = false;
+      try { on = document.queryCommandState(btn.dataset.cmd); } catch(e) {}
+      btn.setAttribute('aria-pressed', on);
+    });
+  }
+
+  // Select these elements again after reformatting, so more formatting can be stacked on the same words
+  function reselect(nodes){
+    if(!nodes.length) return;
+    const range = document.createRange();
+    range.setStartBefore(nodes[0]);
+    range.setEndAfter(nodes[nodes.length - 1]);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    savedRange = range.cloneRange();
+  }
+
+  function applySize(size){
+    restoreSelection();
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand('fontSize', false, '7'); // marks the selection so it can be swapped for a clean span
+    const made = [];
+    editor.querySelectorAll('font[size="7"]').forEach(font => {
+      const span = document.createElement('span');
+      if(SIZE_VALUES[size]) span.style.fontSize = SIZE_VALUES[size];
+      span.append(...font.childNodes);
+      span.querySelectorAll('span').forEach(inner => { inner.style.fontSize = ''; }); // the newest size wins
+      font.replaceWith(span);
+      made.push(span);
+    });
+    reselect(made);
+    refreshPlaceholder();
+  }
+
+  function applyColor(color){
+    restoreSelection();
+    const MARK = 'rgb(1, 2, 3)'; // stand-in color, swapped for the real one (or none) right after
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand('foreColor', false, '#010203');
+    document.execCommand('styleWithCSS', false, false);
+    const made = [];
+    editor.querySelectorAll('span, font').forEach(el => {
+      const marked = (el.style && el.style.color === MARK) || (el.getAttribute('color') || '').toLowerCase() === '#010203';
+      if(!marked) return;
+      el.querySelectorAll('span').forEach(inner => { inner.style.color = ''; });
+      if(el.tagName === 'FONT'){ const span = document.createElement('span'); span.append(...el.childNodes); el.replaceWith(span); el = span; }
+      el.style.color = color || '';
+      made.push(el);
+    });
+    reselect(made);
+    if(color) document.getElementById('fmt-color-bar').style.background = color;
+  }
+
+  document.execCommand('defaultParagraphSeparator', false, 'p');
+  document.querySelectorAll('.editor-toolbar button').forEach(btn => btn.addEventListener('mousedown', (e) => e.preventDefault())); // keep the text selected
+  document.querySelectorAll('.editor-toolbar [data-cmd]').forEach(btn => btn.addEventListener('click', () => {
+    restoreSelection();
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand(btn.dataset.cmd, false, null);
+    if(btn.dataset.cmd === 'removeFormat'){ // also clear sizes and colors inside the selection
+      const range = window.getSelection().rangeCount ? window.getSelection().getRangeAt(0) : null;
+      editor.querySelectorAll('span').forEach(sp => { if(range && range.intersectsNode(sp)) sp.replaceWith(...sp.childNodes); });
+    }
+    updateToolbarState();
+    refreshPlaceholder();
+  }));
+  document.getElementById('fmt-size').addEventListener('change', (e) => {
+    applySize(e.target.value);
+    e.target.selectedIndex = 0; // back to "Size" so the same size can be picked again
+  });
+  const colorPop = document.getElementById('fmt-colors');
+  colorPop.innerHTML = EDITOR_COLORS.map(([name, hex]) =>
+    `<button type="button" data-color="${hex}" title="${name}" aria-label="${name}" style="background:${hex}"></button>`).join('')
+    + '<button type="button" class="default-color" data-color="">Default color</button>';
+  colorPop.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => e.preventDefault());
+    btn.addEventListener('click', () => { applyColor(btn.dataset.color); colorPop.hidden = true; document.getElementById('fmt-color-btn').setAttribute('aria-expanded', 'false'); });
+  });
+  document.getElementById('fmt-color-btn').addEventListener('click', () => {
+    colorPop.hidden = !colorPop.hidden;
+    document.getElementById('fmt-color-btn').setAttribute('aria-expanded', String(!colorPop.hidden));
+  });
+  document.addEventListener('click', (e) => { if(!e.target.closest('.color-wrap')){ colorPop.hidden = true; } });
+
+  editor.addEventListener('input', refreshPlaceholder);
+  // Pasting from websites or Word brings hidden styling along; paste just the words and line breaks
+  editor.addEventListener('paste', (e) => {
+    e.preventDefault();
+    document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+  });
+  setBodyHTML('');
+
   function escapeHtml(str){
     const d = document.createElement('div');
     d.textContent = str || '';
@@ -384,10 +596,10 @@
     document.getElementById('form-heading').textContent = copy.heading;
     document.getElementById('title').placeholder = copy.title;
     document.getElementById('subject').placeholder = copy.subject;
-    document.getElementById('body').placeholder = copy.body;
+    document.getElementById('body').dataset.placeholder = copy.body;
     if(key !== 'review' && document.getElementById('poll-enabled')?.checked){
       document.getElementById('title').placeholder = copy.title.replace(/^Title/, 'Title, optional with a poll');
-      document.getElementById('body').placeholder = copy.body + ' (optional with a poll)';
+      document.getElementById('body').dataset.placeholder = copy.body + ' (optional with a poll)';
     }
     document.getElementById('rating').hidden = key !== 'review';
     document.getElementById('poll-section').hidden = key === 'review' || !!editing;
@@ -454,7 +666,7 @@
     document.querySelectorAll('#category optgroup[label="Reviews"] option').forEach(o => { o.disabled = !!poll; });
     document.getElementById('title').value = r.title || '';
     document.getElementById('subject').value = r.subject || '';
-    document.getElementById('body').value = r.body || '';
+    setBodyHTML(r.body || '');
     if(r.rating != null) document.getElementById('rating').value = String(parseFloat(r.rating));
     document.getElementById('image').value = '';
     document.getElementById('remove-image').checked = false;
@@ -471,7 +683,8 @@
   function stopEdit(){
     editing = null;
     document.querySelectorAll('#category option').forEach(o => { o.disabled = false; });
-    ['title', 'subject', 'body', 'image'].forEach(id => { document.getElementById(id).value = ''; });
+    ['title', 'subject', 'image'].forEach(id => { document.getElementById(id).value = ''; });
+    setBodyHTML('');
     document.getElementById('remove-image').checked = false;
     document.getElementById('current-image').hidden = true;
     document.getElementById('publish-btn').textContent = 'Publish';
@@ -493,7 +706,7 @@
     const category = document.getElementById('category').value;
     const isReview = !NON_REVIEW.includes(category);
     const rating = isReview ? parseFloat(document.getElementById('rating').value) : null;
-    const body = document.getElementById('body').value.trim();
+    const body = getBodyHTML();
     const imageFile = document.getElementById('image').files[0];
     const status = document.getElementById('status');
 
@@ -570,7 +783,7 @@
       resetPoll();
       document.getElementById('title').value = '';
       document.getElementById('subject').value = '';
-      document.getElementById('body').value = '';
+      setBodyHTML('');
       document.getElementById('image').value = '';
       loadManageList();
     }
