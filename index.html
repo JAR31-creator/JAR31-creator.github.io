@@ -304,6 +304,8 @@
   #auth-status{font-size:0.82rem;color:var(--game);margin:6px 0;}
   #auth-status.ok{color:var(--film);}
   #auth-status:empty{display:none;}
+  .mfa-code{font-size:1.4rem !important;letter-spacing:0.3em;text-align:center;}
+  .mfa-code::placeholder{letter-spacing:normal;}
   .dlg-primary{display:block;width:100%;font-family:inherit;font-size:0.95rem;font-weight:600;background:var(--ink);color:var(--paper);border:none;border-radius:22px;padding:11px 16px;cursor:pointer;margin-top:4px;}
   .dlg-primary:disabled{opacity:.5;cursor:default;}
   .dlg-switch{text-align:center;font-size:0.85rem;color:var(--ink-soft);margin:14px 0 0;}
@@ -593,7 +595,10 @@
   }
   authDialog.querySelector('.dlg-close').addEventListener('click', () => authDialog.close());
   authDialog.addEventListener('click', (e) => { if(e.target === authDialog) authDialog.close(); }); // click outside the window
-  authDialog.addEventListener('close', removeTurnstile);
+  authDialog.addEventListener('close', () => {
+    removeTurnstile();
+    if(mfaPending){ mfaPending = false; sb.auth.signOut(); }
+  });
 
   function setStatus(msg, ok){
     const el = document.getElementById('auth-status');
@@ -674,6 +679,22 @@
         </form>`;
       const picker = wireAvatarPicker(body, () => profile?.display_name || '?');
       body.querySelector('#auth-form').addEventListener('submit', (e) => { e.preventDefault(); saveProfile(picker.current()); });
+    }
+
+    else if(mode === 'mfa'){
+      body.innerHTML = `
+        <h2 id="auth-title" tabindex="-1">Enter your code</h2>
+        <p class="dlg-sub">Your account uses two-factor login. Open your authenticator app and enter the 6-digit code for Just Some Reviews.</p>
+        <form id="auth-form" novalidate>
+          <label class="field"><span>6-digit code</span>
+            <input id="mfa-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="mfa-code">
+          </label>
+          <div id="auth-status" role="alert"></div>
+          <button type="submit" class="dlg-primary">Verify</button>
+        </form>`;
+      const codeInput = body.querySelector('#mfa-code');
+      codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 6); });
+      body.querySelector('#auth-form').addEventListener('submit', (e) => { e.preventDefault(); verifyTwoFactor(); });
     }
 
     else if(mode === 'check-email'){
@@ -792,12 +813,41 @@
     submit.disabled = false;
     submit.textContent = 'Log in';
     if(error) return setStatus(error.message);
-    session = data.session;
+    const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2'){
+      mfaPending = true;
+      renderAuthDialog('mfa');
+      focusDialog();
+      return;
+    }
+    finishLogin(data.session);
+  }
+
+  async function finishLogin(newSession){
+    mfaPending = false;
+    session = newSession;
     const { data: p } = await sb.from('profiles').select('display_name, avatar_icon, avatar_color').eq('id', session.user.id).single();
     profile = p;
     authDialog.close();
     showToast(`Welcome back${p?.display_name ? ', ' + p.display_name.split(' ')[0] : ''}!`);
     renderAuthBar(); loadAll();
+  }
+
+  let mfaPending = false; // password accepted, still waiting for the authenticator code
+  async function verifyTwoFactor(){
+    const code = document.getElementById('mfa-code').value;
+    if(code.length !== 6) return setStatus('Enter all 6 digits from your authenticator app.');
+    const submit = authDialog.querySelector('.dlg-primary');
+    submit.disabled = true;
+    submit.textContent = 'Checking…';
+    const { data: factors } = await sb.auth.mfa.listFactors();
+    const factor = factors && (factors.totp || [])[0];
+    const { error } = factor ? await sb.auth.mfa.challengeAndVerify({ factorId: factor.id, code }) : { error: new Error('no factor') };
+    submit.disabled = false;
+    submit.textContent = 'Verify';
+    if(error) return setStatus("That code didn't work. Codes change every 30 seconds, so enter the one your app shows right now.");
+    const { data } = await sb.auth.getSession();
+    finishLogin(data.session);
   }
 
   async function forgotPassword(){
@@ -829,6 +879,13 @@
   async function initAuth(){
     const { data } = await sb.auth.getSession();
     session = data.session;
+    if(session){
+      const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+      if(aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2'){
+        await sb.auth.signOut();
+        session = null;
+      }
+    }
     if(session){
       const { data: p } = await sb.from('profiles').select('display_name, avatar_icon, avatar_color').eq('id', session.user.id).single();
       profile = p;
