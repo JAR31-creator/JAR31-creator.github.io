@@ -50,6 +50,12 @@
   .row-date{display:block;font-size:0.75rem;color:#777;margin-bottom:1px;}
   .manage-row button.edit-btn{background:#eee;color:#1C1B19;border:1px solid #ccc;}
   .month-group .manage-row{padding-left:14px;}
+  [hidden]{display:none !important;}
+  .pw-wrap{position:relative;margin-bottom:12px;}
+  .pw-wrap input{margin-bottom:0;padding-right:64px;}
+  .pw-show{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px 8px;font-size:0.8rem;font-weight:600;color:#5A5751;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .pw-show:hover{color:#1C1B19;}
+  .pw-show:focus-visible{outline:2px solid #1C1B19;outline-offset:2px;border-radius:4px;}
   #current-image{display:flex;gap:12px;align-items:center;margin-bottom:10px;}
   #current-image img{max-width:80px;max-height:100px;border:1px solid #ddd;border-radius:4px;}
   .inline-check{display:flex;align-items:center;gap:6px;font-size:0.9rem;cursor:pointer;}
@@ -57,6 +63,8 @@
   .form-actions{display:flex;gap:8px;align-items:center;}
   .form-actions button{margin-bottom:0;}
   #manage-search{margin-bottom:6px;}
+  .drafts-group{margin-bottom:14px;padding:4px 10px 6px;border:1px dashed #C9C1B0;border-radius:8px;background:#FBF8F1;}
+  .drafts-group .manage-row:last-child{border-bottom:none;}
   .editing-now{outline:2px solid #1C1B19;outline-offset:2px;border-radius:4px;}
   .end-edit{margin-top:6px;font-size:0.82rem;}
   .end-edit summary{cursor:pointer;color:#555;}
@@ -77,11 +85,9 @@
   <h1>Log in</h1>
   <form id="login-form">
     <input id="email" type="email" placeholder="Email" autocomplete="username">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <input id="password" type="password" placeholder="Password" autocomplete="current-password" style="width:auto;flex:1;margin-bottom:0;">
-      <label style="font-size:0.8rem;display:flex;align-items:center;gap:4px;white-space:nowrap;">
-        <input type="checkbox" onchange="document.getElementById('password').type = this.checked ? 'text' : 'password';"> Show
-      </label>
+    <div class="pw-wrap">
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+      <button type="button" class="pw-show" id="pw-show" aria-label="Show password">Show</button>
     </div>
     <div id="turnstile-container" style="margin-bottom:12px;"></div>
     <button type="submit">Log in</button>
@@ -165,7 +171,8 @@
   </div>
   <input id="image" type="file" accept="image/*">
   <div class="form-actions">
-    <button id="publish-btn" onclick="submitReview()">Publish</button>
+    <button id="publish-btn" onclick="submitReview('publish')">Publish</button>
+    <button id="draft-btn" type="button" class="secondary" onclick="submitReview('draft')">Save draft</button>
     <button id="cancel-edit-btn" type="button" class="secondary" onclick="stopEdit()" hidden>Cancel editing</button>
   </div>
   <div id="status"></div>
@@ -258,6 +265,19 @@
       </div>`;
   }
 
+  function draftRowHTML(r){
+    const label = r.title || (r.draft_poll && r.draft_poll.question ? 'Poll: ' + r.draft_poll.question : '(untitled draft)');
+    const saved = new Date(r.updated_at || r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return `
+      <div class="manage-row ${editing && editing.id === r.id ? 'editing-now' : ''}">
+        <span class="row-title"><span class="row-date">Last saved ${saved}</span><span class="row-label">${escapeHtml(label)}</span> <em>(${r.category} draft${r.draft_poll ? ', with poll' : ''})</em></span>
+        <span class="row-actions">
+          <button class="edit-btn" data-id="${r.id}">${editing && editing.id === r.id ? 'Editing…' : 'Continue'}</button>
+          <button class="del-btn" data-id="${r.id}">Delete</button>
+        </span>
+      </div>`;
+  }
+
   function renderManageList(){
     const list = document.getElementById('manage-list');
     const query = document.getElementById('manage-search').value.trim().toLowerCase();
@@ -267,16 +287,24 @@
       const poll = manageData.pollFor.get(r.id);
       return [r.title, r.subject, r.category, poll && poll.question].some(v => v && v.toLowerCase().includes(query));
     });
+    const drafts = matches.filter(r => r.status === 'draft')
+      .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+    const published = matches.filter(r => r.status !== 'draft');
     if(!matches.length){ list.innerHTML = `<p class="poll-hint">No posts match "${escapeHtml(query)}".</p>`; return; }
 
     const groups = [];
-    matches.forEach(r => {
+    published.forEach(r => {
       const month = new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       const last = groups[groups.length - 1];
       if(last && last.month === month) last.items.push(r); else groups.push({ month, items: [r] });
     });
     const isOpen = (month, i) => query ? true : openMonths ? openMonths.has(month) : i === 0; // searching opens everything
-    list.innerHTML = groups.map((g, i) => `
+    const draftsHTML = drafts.length ? `
+      <details class="date-group drafts-group" open>
+        <summary>Drafts <span class="count">(${drafts.length})</span></summary>
+        ${drafts.map(draftRowHTML).join('')}
+      </details>` : '';
+    list.innerHTML = draftsHTML + groups.map((g, i) => `
       <details class="date-group month-group" data-month="${g.month}" ${isOpen(g.month, i) ? 'open' : ''}>
         <summary>${g.month} <span class="count">(${g.items.length})</span></summary>
         ${g.items.map(manageRowHTML).join('')}
@@ -602,9 +630,10 @@
       document.getElementById('body').dataset.placeholder = copy.body + ' (optional with a poll)';
     }
     document.getElementById('rating').hidden = key !== 'review';
-    document.getElementById('poll-section').hidden = key === 'review' || !!editing;
-    document.getElementById('poll-locked-note').hidden = !(editing && editing.hasPoll);
-    if(editing) document.getElementById('form-heading').textContent = key === 'review' ? 'Edit review' : 'Edit ' + key;
+    const pollLocked = !!editing && !editing.isDraft; // a published post's poll can't change; a draft's still can
+    document.getElementById('poll-section').hidden = key === 'review' || pollLocked;
+    document.getElementById('poll-locked-note').hidden = !(pollLocked && editing.hasPoll);
+    if(editing) document.getElementById('form-heading').textContent = editing.isDraft ? 'Edit draft' : (key === 'review' ? 'Edit review' : 'Edit ' + key);
   }
 
   // ---------- Poll builder ----------
@@ -656,11 +685,33 @@
 
   // ---------- Editing a published post ----------
 
+  function refreshActionButtons(){
+    const isDraft = !!(editing && editing.isDraft);
+    document.getElementById('publish-btn').textContent = editing && !isDraft ? 'Save changes' : 'Publish';
+    document.getElementById('draft-btn').hidden = !!editing && !isDraft; // published posts are edited in place
+    document.getElementById('cancel-edit-btn').hidden = !editing;
+    document.getElementById('cancel-edit-btn').textContent = isDraft ? 'Close draft' : 'Cancel editing';
+  }
+
+  function fillPollBuilder(draftPoll){
+    resetPoll();
+    if(!draftPoll) return;
+    document.getElementById('poll-enabled').checked = true;
+    document.getElementById('poll-fields').hidden = false;
+    document.getElementById('poll-question').value = draftPoll.question || '';
+    document.getElementById('poll-options').innerHTML = '';
+    const opts = (draftPoll.options || []).slice(0, MAX_POLL_OPTIONS);
+    while(opts.length < 2) opts.push('');
+    opts.forEach(o => addPollOption(o));
+    document.getElementById('poll-ends').value = toLocalInput(draftPoll.ends_at);
+    updateFormForCategory();
+  }
+
   function startEdit(id){
     const r = manageData.reviews.find(x => x.id === id);
     if(!r) return;
     const poll = manageData.pollFor.get(id);
-    editing = { id, image_url: r.image_url || null, hasPoll: !!poll };
+    editing = { id, image_url: r.image_url || null, hasPoll: !!poll, isDraft: r.status === 'draft' };
     document.getElementById('category').value = r.category;
     // a post with a poll stays a post or announcement, since reviews can't have polls
     document.querySelectorAll('#category optgroup[label="Reviews"] option').forEach(o => { o.disabled = !!poll; });
@@ -672,10 +723,10 @@
     document.getElementById('remove-image').checked = false;
     document.getElementById('current-image').hidden = !r.image_url;
     if(r.image_url) document.getElementById('current-image-thumb').src = r.image_url;
-    document.getElementById('publish-btn').textContent = 'Save changes';
-    document.getElementById('cancel-edit-btn').hidden = false;
     document.getElementById('status').textContent = '';
-    updateFormForCategory();
+    if(editing.isDraft) fillPollBuilder(r.draft_poll); // also refreshes the heading and hints
+    else updateFormForCategory();
+    refreshActionButtons();
     renderManageList();
     document.getElementById('form-heading').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -687,9 +738,8 @@
     setBodyHTML('');
     document.getElementById('remove-image').checked = false;
     document.getElementById('current-image').hidden = true;
-    document.getElementById('publish-btn').textContent = 'Publish';
-    document.getElementById('cancel-edit-btn').hidden = true;
     resetPoll(); // also refreshes the heading and hints for the selected category
+    refreshActionButtons();
     renderManageList();
   }
 
@@ -700,7 +750,8 @@
     await sb.storage.from('review-images').remove([decodeURIComponent(url.split(marker)[1].split('?')[0])]);
   }
 
-  async function submitReview(){
+  async function submitReview(mode = 'publish'){
+    const asDraft = mode === 'draft';
     const title = document.getElementById('title').value.trim();
     const subject = document.getElementById('subject').value.trim();
     const category = document.getElementById('category').value;
@@ -709,32 +760,41 @@
     const body = getBodyHTML();
     const imageFile = document.getElementById('image').files[0];
     const status = document.getElementById('status');
+    const editingDraft = !!(editing && editing.isDraft);
 
-
-    const pollOn = !editing && !isReview && document.getElementById('poll-enabled').checked;
+    const pollOn = (!editing || editingDraft) && !isReview && document.getElementById('poll-enabled').checked;
     const hasPoll = pollOn || !!(editing && editing.hasPoll);
-    if(!hasPoll && (!title || !body)){
-      status.textContent = isReview
-        ? "Title and text are required."
-        : "Title and text are required, unless you add a poll to post it on its own.";
-      return;
-    }
     const pollQuestion = document.getElementById('poll-question').value.trim();
     const pollOptions = [...document.querySelectorAll('#poll-options .poll-option')].map(i => i.value.trim()).filter(Boolean);
-    if(pollOn){
-      if(!pollQuestion){ status.textContent = "Add a question for your poll."; return; }
-      if(pollOptions.length < 2){ status.textContent = "Your poll needs at least 2 options."; return; }
-      if(new Set(pollOptions.map(o => o.toLowerCase())).size !== pollOptions.length){
-        status.textContent = "Each poll option needs to be different."; return;
-      }
-    }
     const endsValue = document.getElementById('poll-ends').value;
     let pollEndsAt = null;
     if(pollOn && endsValue){
       const end = new Date(endsValue);
       if(isNaN(end.getTime())){ status.textContent = "That end date isn't valid. Pick it again from the calendar."; return; }
-      if(end <= new Date()){ status.textContent = "The poll's end date needs to be in the future."; return; }
       pollEndsAt = end.toISOString();
+    }
+
+    if(asDraft){
+      // drafts can be unfinished, they just can't be completely empty
+      if(!title && !body && !(pollOn && pollQuestion)){
+        status.textContent = "Add at least a title, some text, or a poll question before saving a draft.";
+        return;
+      }
+    } else {
+      if(!hasPoll && (!title || !body)){
+        status.textContent = isReview
+          ? "Title and text are required."
+          : "Title and text are required, unless you add a poll to post it on its own.";
+        return;
+      }
+      if(pollOn){
+        if(!pollQuestion){ status.textContent = "Add a question for your poll."; return; }
+        if(pollOptions.length < 2){ status.textContent = "Your poll needs at least 2 options."; return; }
+        if(new Set(pollOptions.map(o => o.toLowerCase())).size !== pollOptions.length){
+          status.textContent = "Each poll option needs to be different."; return;
+        }
+        if(pollEndsAt && new Date(pollEndsAt) <= new Date()){ status.textContent = "The poll's end date needs to be in the future."; return; }
+      }
     }
 
     const removeImage = !!editing && document.getElementById('remove-image').checked;
@@ -750,44 +810,79 @@
       image_url = sb.storage.from('review-images').getPublicUrl(path).data.publicUrl;
     }
 
+    const now = new Date().toISOString();
+    const fields = { title, subject, category, rating, body, image_url, updated_at: now };
+    const draftPoll = pollOn ? { question: pollQuestion, options: pollOptions, ends_at: pollEndsAt } : null;
+
+    const attachPoll = async (reviewId) => {
+      const { data: poll, error: pollError } = await sb.from('polls').insert({ review_id: reviewId, question: pollQuestion, ends_at: pollEndsAt }).select().single();
+      if(pollError) return pollError;
+      const { error: optError } = await sb.from('poll_options').insert(pollOptions.map((label, position) => ({ poll_id: poll.id, label, position })));
+      return optError || null;
+    };
+    const savedTime = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    // after saving a draft, stay on it so you can keep writing
+    const stayOnDraft = (id) => {
+      if(editing && editing.image_url && editing.image_url !== image_url) deleteStoredImage(editing.image_url);
+      editing = { id, image_url, hasPoll: false, isDraft: true };
+      document.getElementById('image').value = '';
+      document.getElementById('remove-image').checked = false;
+      document.getElementById('current-image').hidden = !image_url;
+      if(image_url) document.getElementById('current-image-thumb').src = image_url;
+      updateFormForCategory();
+      refreshActionButtons();
+      status.textContent = `Draft saved at ${savedTime()}. You'll find it under Drafts below.`;
+      loadManageList();
+    };
+
     if(editing){
-      const { data: updated, error: updateError } = await sb.from('reviews')
-        .update({ title, subject, category, rating, body, image_url }).eq('id', editing.id).select();
-      if(updateError){ status.textContent = "Couldn't save your changes: " + updateError.message; return; }
+      let changes = fields;
+      if(editingDraft && asDraft) changes = { ...fields, draft_poll: draftPoll };
+      if(editingDraft && !asDraft) changes = { ...fields, status: 'published', draft_poll: null, created_at: now }; // dated the day it goes live
+      const { data: updated, error: updateError } = await sb.from('reviews').update(changes).eq('id', editing.id).select();
+      if(updateError){ status.textContent = "Couldn't save: " + updateError.message; return; }
       if(!updated || !updated.length){
         status.textContent = 'Nothing was saved. This usually means the "admin write reviews" policy has the wrong User UID.';
         return;
       }
+      if(asDraft){ stayOnDraft(editing.id); return; }
+      if(editingDraft && pollOn){
+        const pollErr = await attachPoll(editing.id);
+        if(pollErr){ status.textContent = "Published, but the poll couldn't be saved: " + pollErr.message; stopEdit(); loadManageList(); return; }
+      }
       if(editing.image_url && editing.image_url !== image_url) deleteStoredImage(editing.image_url);
+      const wasDraft = editingDraft;
       stopEdit();
-      status.textContent = "Saved! Your changes are live.";
+      status.textContent = wasDraft ? "Published! Check the live site." : "Saved! Your changes are live.";
       loadManageList();
       return;
     }
 
-    const { data: saved, error } = await sb.from('reviews').insert({ title, subject, category, rating, body, image_url }).select().single();
-    if(!error && pollOn){
-      const { data: poll, error: pollError } = await sb.from('polls').insert({ review_id: saved.id, question: pollQuestion, ends_at: pollEndsAt }).select().single();
-      const { error: optError } = pollError ? { error: pollError } :
-        await sb.from('poll_options').insert(pollOptions.map((label, position) => ({ poll_id: poll.id, label, position })));
-      if(pollError || optError){
-        status.textContent = "Published, but the poll couldn't be saved: " + (pollError || optError).message;
-        loadManageList();
-        return;
-      }
+    const row = asDraft ? { ...fields, status: 'draft', draft_poll: draftPoll } : { ...fields, status: 'published' };
+    const { data: saved, error } = await sb.from('reviews').insert(row).select().single();
+    if(error){ status.textContent = "Error: " + error.message; return; }
+    if(asDraft){ stayOnDraft(saved.id); return; }
+    if(pollOn){
+      const pollErr = await attachPoll(saved.id);
+      if(pollErr){ status.textContent = "Published, but the poll couldn't be saved: " + pollErr.message; loadManageList(); return; }
     }
-    if(error){
-      status.textContent = "Error: " + error.message;
-    } else {
-      status.textContent = "Published! Check the live site.";
-      resetPoll();
-      document.getElementById('title').value = '';
-      document.getElementById('subject').value = '';
-      setBodyHTML('');
-      document.getElementById('image').value = '';
-      loadManageList();
-    }
+    status.textContent = "Published! Check the live site.";
+    resetPoll();
+    document.getElementById('title').value = '';
+    document.getElementById('subject').value = '';
+    setBodyHTML('');
+    document.getElementById('image').value = '';
+    loadManageList();
   }
+
+  document.getElementById('pw-show').addEventListener('click', () => {
+    const input = document.getElementById('password');
+    const btn = document.getElementById('pw-show');
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.textContent = showing ? 'Show' : 'Hide';
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
 
   checkSession();
 </script>
