@@ -96,6 +96,7 @@
   .rich p{margin:0;}
   .rich a{color:inherit;text-decoration:underline;text-decoration-color:var(--cat, var(--ink));text-decoration-thickness:2px;text-underline-offset:3px;transition:color .15s ease;}
   .rich a:hover{color:var(--cat, var(--ink));}
+  .rich img{display:block;max-width:min(100%, 360px);max-height:280px;width:auto;height:auto;margin:10px 0;border-radius:8px;}
   .rich ul, .rich ol{margin:0;padding-left:1.4em;}
   .rich b, .rich strong{font-weight:700;}
   .actions{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
@@ -201,6 +202,18 @@
   .heart{display:inline-block;}
   @keyframes pop{0%{transform:scale(1);}35%{transform:scale(1.4);}100%{transform:scale(1);}}
   .pop svg, .pop .heart{animation:pop .35s ease-out;}
+  .like-btn{position:relative;}
+  .heart{display:inline-block;}
+  /* like: a happy bounce and wiggle */
+  @keyframes likeDance{0%{transform:scale(1) rotate(0);}20%{transform:scale(1.5) rotate(-14deg);}40%{transform:scale(1.15) rotate(12deg);}60%{transform:scale(1.3) rotate(-8deg);}80%{transform:scale(1.05) rotate(4deg);}100%{transform:scale(1) rotate(0);}}
+  /* dislike: a disappointed droop and head-shake */
+  @keyframes dislikeDance{0%{transform:translateY(0) rotate(0);}20%{transform:translateY(3px) rotate(-16deg);}40%{transform:translateY(3px) rotate(14deg);}60%{transform:translateY(2px) rotate(-10deg);}80%{transform:translateY(1px) rotate(5deg);}100%{transform:translateY(0) rotate(0);}}
+  .vote-btn[data-type="like"].pop .heart{animation:likeDance .65s ease-out;}
+  .vote-btn[data-type="dislike"].pop .heart{animation:dislikeDance .65s ease-out;}
+  @keyframes countBump{0%{transform:translateY(0);}30%{transform:translateY(-4px);}100%{transform:translateY(0);}}
+  .vote-btn.pop .vote-count{display:inline-block;animation:countBump .4s ease-out .1s;}
+  .mini-heart{position:absolute;left:14px;top:2px;font-size:0.75rem;pointer-events:none;opacity:0;animation:floatUp .9s ease-out forwards;}
+  @keyframes floatUp{0%{opacity:0;transform:translate(0,0) scale(.6);}15%{opacity:1;}100%{opacity:0;transform:translate(var(--dx), -34px) scale(1.1) rotate(var(--rot));}}
   @keyframes rise{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
   @keyframes fade{from{opacity:0;}to{opacity:1;}}
   #lightbox.open{animation:fade .15s ease-out;}
@@ -261,6 +274,15 @@
   .avatar.mini{width:24px;height:24px;font-size:0.7rem;}
   .avatar.big{width:46px;height:46px;font-size:1.15rem;}
   #authbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  #authbar #show-login, #authbar #show-signup{text-decoration:none;font-weight:600;padding:5px 14px;border-radius:16px;margin:0 2px;
+    transition:transform .15s ease, background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;}
+  #authbar #show-login{border:1px solid var(--ink-soft);color:var(--ink);}
+  #authbar #show-signup{border:1px solid var(--ink);background:var(--ink);color:var(--paper);}
+  @media (hover: hover){
+    #authbar #show-login:hover{transform:translateY(-3px);background:var(--ink);border-color:var(--ink);color:var(--paper);box-shadow:0 5px 12px var(--shadow);}
+    #authbar #show-signup:hover{transform:translateY(-3px);background:var(--film);border-color:var(--film);color:#FFFFFF;box-shadow:0 5px 12px var(--shadow);}
+  }
+  #authbar #show-login:focus-visible, #authbar #show-signup:focus-visible{transform:translateY(-3px);}
   #auth-dialog{padding:0;border:none;border-radius:14px;background:var(--paper);color:var(--ink);width:min(460px, calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.28);}
   #auth-dialog::backdrop{background:rgba(20,19,17,.55);}
   #auth-dialog[open]{animation:rise .18s ease-out;}
@@ -303,6 +325,12 @@
   #turnstile-auth-container{margin:2px 0 8px;}
   #auth-status{font-size:0.82rem;color:var(--game);margin:6px 0;}
   #auth-status.ok{color:var(--film);}
+  .callout{display:flex;gap:12px;align-items:flex-start;margin:0 0 16px;padding:14px 16px;border-radius:10px;border:1.5px solid var(--film);background:var(--tint);color:var(--ink);animation:rise .25s ease-out;}
+  .callout svg{flex:none;width:26px;height:26px;color:var(--film);margin-top:1px;}
+  .callout strong{display:block;font-size:1rem;margin-bottom:2px;}
+  .callout p{margin:0;font-size:0.88rem;line-height:1.45;color:var(--ink-soft);}
+  .callout p b{color:var(--ink);font-weight:600;overflow-wrap:anywhere;}
+  .dlg-link:disabled{text-decoration:none;color:var(--ink-soft);cursor:default;}
   #auth-status:empty{display:none;}
   .mfa-code{font-size:1.4rem !important;letter-spacing:0.3em;text-align:center;}
   .mfa-code::placeholder{letter-spacing:normal;}
@@ -666,6 +694,7 @@
         </form>`;
       body.querySelector('#auth-form').addEventListener('submit', (e) => { e.preventDefault(); doLogin(); });
       body.querySelector('#forgot-btn').addEventListener('click', forgotPassword);
+      tickResetCooldown(); // still counting down if the window was reopened
     }
 
     else if(mode === 'profile'){
@@ -859,8 +888,38 @@
       captchaToken: turnstileToken
     });
     resetTurnstile();
-    if(error) setStatus(error.message);
-    else setStatus('Check your email for a password reset link.', true);
+    if(error) return setStatus(error.message);
+    showResetSent(email);
+  }
+
+  const ENVELOPE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.8 6.5l8.2 6.2 8.2-6.2"/></svg>';
+  let resetCooldownUntil = 0;
+  function showResetSent(email){
+    setStatus('');
+    const body = document.getElementById('auth-dialog-body');
+    body.querySelector('.callout')?.remove();
+    const box = document.createElement('div');
+    box.className = 'callout';
+    box.setAttribute('role', 'status');
+    box.innerHTML = ENVELOPE_ICON + `<div><strong>Check your email</strong><p>We sent a password reset link to <b>${escapeHtml(email)}</b>. It can take a minute or two to arrive, so check your spam folder too.</p></div>`;
+    body.querySelector('.dlg-sub').after(box); // at the top of the window, where it's hard to miss
+    authDialog.scrollTo({ top: 0, behavior: 'smooth' });
+    resetCooldownUntil = Date.now() + 60000;
+    tickResetCooldown();
+  }
+  // Supabase sends at most one reset email per minute, so pause the button with a countdown instead of failing silently
+  function tickResetCooldown(){
+    const btn = document.getElementById('forgot-btn');
+    if(!btn) return;
+    const left = Math.ceil((resetCooldownUntil - Date.now()) / 1000);
+    if(left > 0){
+      btn.disabled = true;
+      btn.textContent = `Link sent. You can send another in ${left}s`;
+      setTimeout(tickResetCooldown, 1000);
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Forgot password?';
+    }
   }
 
   async function saveProfile({ icon, color }){
@@ -1591,8 +1650,8 @@
         </div>
         ${r.poll ? renderPoll(r.poll) : ''}
         <div class="actions">
-          <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="${session ? 'Like' : 'Log in to like'}"><span class="heart">❤️</span> ${r.likeCount}</button>
-          <button class="like-btn vote-btn ${vote === 'dislike' ? 'liked' : ''} ${popTarget === `r-${r.id}-dislike` ? 'pop' : ''}" data-id="${r.id}" data-type="dislike" aria-pressed="${vote === 'dislike'}" title="${session ? 'Dislike' : 'Log in to dislike'}"><span class="heart">👎</span> ${r.dislikeCount}</button>
+          <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="${session ? 'Like' : 'Log in to like'}"><span class="heart">❤️</span> <span class="vote-count">${r.likeCount}</span></button>
+          <button class="like-btn vote-btn ${vote === 'dislike' ? 'liked' : ''} ${popTarget === `r-${r.id}-dislike` ? 'pop' : ''}" data-id="${r.id}" data-type="dislike" aria-pressed="${vote === 'dislike'}" title="${session ? 'Dislike' : 'Log in to dislike'}"><span class="heart">👎</span> <span class="vote-count">${r.dislikeCount}</span></button>
         </div>
         <div class="comments">
           ${r.comments.filter(c => !c.parent_comment_id).map(c => renderComment(c, r.comments, r.id, 0)).join('')}
@@ -1602,12 +1661,25 @@
         </div>
       </article>`;
     }).join('');
+    const liked = container.querySelector('.vote-btn[data-type="like"].pop');
+    if(liked && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+      [[-14, -18], [2, 6], [16, 20]].forEach(([dx, rot], i) => {
+        const h = document.createElement('span');
+        h.className = 'mini-heart';
+        h.textContent = '❤️';
+        h.setAttribute('aria-hidden', 'true');
+        h.style.setProperty('--dx', dx + 'px');
+        h.style.setProperty('--rot', rot + 'deg');
+        h.style.animationDelay = (i * 0.08) + 's';
+        liked.appendChild(h);
+      });
+    }
     popTarget = null;
 
     container.querySelectorAll('.vote-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const added = await castVote(btn.dataset.id, btn.dataset.type);
-        if(added) popTarget = `r-${btn.dataset.id}-${btn.dataset.type}`;
+        if(added){ popTarget = `r-${btn.dataset.id}-${btn.dataset.type}`; quietUntil = Date.now() + 1000; }
         loadAll();
       });
     });
@@ -1761,6 +1833,12 @@
       return (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : null;
     } catch(e) { return null; }
   }
+  function safeImageSrc(raw){
+    try {
+      const url = new URL((raw || '').trim());
+      return url.protocol === 'https:' ? url.href : null;
+    } catch(e) { return null; }
+  }
   function sanitizeRichText(html){
     const tpl = document.createElement('template'); // parsed without running anything or loading anything
     tpl.innerHTML = html;
@@ -1780,6 +1858,16 @@
           a.rel = 'noopener noreferrer';
           a.append(...node.childNodes);
           node.replaceWith(a);
+          return;
+        }
+        if(tag === 'IMG'){ // a GIF or picture: only from a secure (https) address, with nothing else attached
+          const src = safeImageSrc(node.getAttribute('src'));
+          if(!src){ node.remove(); return; }
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = (node.getAttribute('alt') || 'GIF').slice(0, 120);
+          img.loading = 'lazy';
+          node.replaceWith(img);
           return;
         }
         if(!RICH_TAGS.has(tag)){ node.replaceWith(...node.childNodes); return; } // keep the words, drop the tag
@@ -1811,7 +1899,7 @@
   // Older reviews were saved as plain text; show each line on its own, with blank lines kept
   function bodyToHTML(body){
     if(!body) return '';
-    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span|a)\b/i.test(body)) return sanitizeRichText(body);
+    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span|a|img)\b/i.test(body)) return sanitizeRichText(body);
     return body.split('\n').map(line => `<p>${escapeHtml(line) || '<br>'}</p>`).join('');
   }
 
@@ -1903,9 +1991,10 @@
 
   // ---------- Live updates ----------
   let refreshTimer = null;
+  let quietUntil = 0; // briefly hold live refreshes while a like/dislike reaction plays
   function scheduleRefresh(){
     clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(loadAll, 500); // bundles bursts of changes into one refresh
+    refreshTimer = setTimeout(loadAll, Math.max(500, quietUntil - Date.now())); // bundles bursts of changes into one refresh
   }
   function startLiveUpdates(){
     const channel = sb.channel('site-activity');

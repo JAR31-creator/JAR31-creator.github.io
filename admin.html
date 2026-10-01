@@ -31,6 +31,22 @@
   .editor-area p{margin:0;}
   .editor-area a{color:#2F6F6E;text-decoration:underline;text-underline-offset:2px;}
   .link-wrap{position:relative;display:inline-block;}
+  .pop-wrap{position:relative;display:inline-block;}
+  .tb-icon{width:15px;height:15px;vertical-align:-3px;}
+  .gif-badge{display:inline-block;font-size:0.7rem;font-weight:700;letter-spacing:0.04em;border:1.5px solid currentColor;border-radius:4px;padding:0 4px;line-height:1.4;}
+  .tool-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:11;background:#fff;border:1px solid #D8D1C3;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.14);overflow:hidden;}
+  .emoji-tool{width:min(340px, 90vw);}
+  .emoji-tool emoji-picker{display:block;width:100%;height:340px;--border-size:0;--num-columns:8;--emoji-size:1.35rem;--indicator-color:#1C1B19;--input-border-radius:18px;}
+  .gif-tool{width:min(340px, 90vw);padding:8px;display:flex;flex-direction:column;gap:8px;}
+  .gif-tool[hidden]{display:none;}
+  .gif-tool input{margin:0;border-radius:18px;padding:8px 12px;}
+  .gif-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;height:260px;overflow-y:auto;}
+  .gif-item{display:block;width:100%;height:105px;padding:0 !important;border:none !important;background:#F1EDE3 !important;border-radius:8px !important;overflow:hidden;cursor:pointer;}
+  .gif-item img{display:block;width:100%;height:100%;object-fit:cover;}
+  .gif-item:hover{outline:2px solid #1C1B19;outline-offset:-2px;}
+  .gif-msg{grid-column:1 / -1;font-size:0.82rem;color:#5A5751;text-align:center;padding:36px 10px;margin:0;}
+  .gif-attrib{font-size:0.7rem;color:#5A5751;text-align:right;}
+  .editor-area img{display:block;max-width:240px;max-height:200px;margin:8px 0;border-radius:6px;}
   .link-label{text-decoration:underline;text-underline-offset:2px;}
   .link-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:10;width:min(300px, 86vw);padding:10px;background:#fff;border:1px solid #D8D1C3;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.12);}
   .link-pop label{display:block;font-size:0.8rem;font-weight:600;margin-bottom:4px;}
@@ -62,6 +78,15 @@
   .manage-row button.edit-btn{background:#eee;color:#1C1B19;border:1px solid #ccc;}
   .month-group .manage-row{padding-left:14px;}
   [hidden]{display:none !important;}
+  .link-btn{background:none;border:none;padding:0;margin-top:10px;font-size:0.85rem;color:#2F5D8A;text-decoration:underline;cursor:pointer;}
+  .link-btn:disabled{color:#7A756C;text-decoration:none;cursor:default;}
+  .callout{display:flex;gap:12px;align-items:flex-start;margin:0 0 16px;padding:14px 16px;border-radius:10px;border:1.5px solid #2F6F6E;background:#EEF5F2;color:#1C1B19;animation:calloutIn .25s ease-out;}
+  .callout svg{flex:none;width:26px;height:26px;color:#2F6F6E;margin-top:1px;}
+  .callout strong{display:block;font-size:1rem;margin-bottom:2px;}
+  .callout p{margin:0;font-size:0.88rem;line-height:1.45;color:#5A5751;}
+  .callout p b{color:#1C1B19;overflow-wrap:anywhere;}
+  @keyframes calloutIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){ .callout{animation:none;} }
   .mfa-lead{color:#5A5751;margin:-4px 0 16px;}
   .mfa-steps{padding-left:1.2em;margin:0 0 12px;}
   .mfa-steps li{margin-bottom:12px;line-height:1.5;}
@@ -109,6 +134,7 @@
 
 <div id="login">
   <h1>Log in</h1>
+  <div id="reset-callout" class="callout" role="status" hidden></div>
   <form id="login-form">
     <input id="email" type="email" placeholder="Email" autocomplete="username">
     <div class="pw-wrap">
@@ -118,7 +144,7 @@
     <div id="turnstile-container" style="margin-bottom:12px;"></div>
     <button type="submit">Log in</button>
     <div id="login-status"></div>
-    <a href="#" onclick="forgotPassword(); return false;" style="font-size:0.85rem;display:inline-block;margin-top:10px;">Forgot password?</a>
+    <button type="button" id="admin-forgot-btn" class="link-btn" onclick="forgotPassword()">Forgot password?</button>
   </form>
 </div>
 
@@ -212,6 +238,19 @@
         </div>
       </span>
       <span class="tb-sep" aria-hidden="true"></span>
+      <span class="pop-wrap" id="emoji-wrap">
+        <button type="button" id="fmt-emoji-btn" title="Add an emoji" aria-label="Emoji" aria-expanded="false"><svg class="tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><circle cx="7.3" cy="8.4" r="0.9" fill="currentColor" stroke="none"/><circle cx="12.7" cy="8.4" r="0.9" fill="currentColor" stroke="none"/><path d="M6.8 11.8c1.1 1.5 5.3 1.5 6.4 0" stroke-linecap="round"/></svg> Emoji</button>
+        <div id="fmt-emoji" class="tool-pop emoji-tool" role="dialog" aria-label="Choose an emoji" hidden></div>
+      </span>
+      <span class="pop-wrap" id="gif-wrap">
+        <button type="button" id="fmt-gif-btn" title="Add a GIF" aria-label="GIF" aria-expanded="false"><span class="gif-badge">GIF</span></button>
+        <div id="fmt-gif" class="tool-pop gif-tool" role="dialog" aria-label="Choose a GIF" hidden>
+          <input type="search" id="fmt-gif-search" placeholder="Search GIFs" aria-label="Search GIFs" autocomplete="off">
+          <div id="fmt-gif-grid" class="gif-grid" aria-live="polite"></div>
+          <div class="gif-attrib">Powered by KLIPY</div>
+        </div>
+      </span>
+      <span class="tb-sep" aria-hidden="true"></span>
       <button type="button" data-cmd="insertUnorderedList" title="Bulleted list" aria-label="Bulleted list">&bull; List</button>
       <button type="button" data-cmd="insertOrderedList" title="Numbered list" aria-label="Numbered list">1. List</button>
       <button type="button" data-cmd="removeFormat" title="Clear formatting from selected text" aria-label="Clear formatting">Clear</button>
@@ -257,6 +296,11 @@
 <script>
   const SUPABASE_URL = "https://lzktxoizovfjgkxkpbhw.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a3R4b2l6b3ZmamdreGtwYmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMDA3MDYsImV4cCI6MjEwNTg3NjcwNn0.NUWMnrx3XGoaDjQQovP5R100CDQL4Bk4Bix7kr52fJY";
+
+  // ---- GIF search, powered by KLIPY (use the same key as your main site). The GIF button stays hidden until a real key is pasted here. ----
+  const KLIPY_API_KEY = "gGshsjNkMlXl5WGZlYR7eknNdNDJWvyo1MJUychCALHicK5kZFsjCkYeNgDYHqr2";
+  const GIF_RATING = 'pg-13'; // strictest to loosest: 'g', 'pg', 'pg-13', 'r'
+  const GIFS_ENABLED = !!KLIPY_API_KEY && !KLIPY_API_KEY.startsWith('YOUR-');
   const TURNSTILE_SITE_KEY = "0x4AAAAAAFDVvbmopL_cQoNQ";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { storageKey: 'sb-admin-auth' }
@@ -491,6 +535,12 @@
       return (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : null;
     } catch(e) { return null; }
   }
+  function safeImageSrc(raw){
+    try {
+      const url = new URL((raw || '').trim());
+      return url.protocol === 'https:' ? url.href : null;
+    } catch(e) { return null; }
+  }
   function sanitizeRichText(html){
     const tpl = document.createElement('template'); // parsed without running anything or loading anything
     tpl.innerHTML = html;
@@ -510,6 +560,16 @@
           a.rel = 'noopener noreferrer';
           a.append(...node.childNodes);
           node.replaceWith(a);
+          return;
+        }
+        if(tag === 'IMG'){ // a GIF or picture: only from a secure (https) address, with nothing else attached
+          const src = safeImageSrc(node.getAttribute('src'));
+          if(!src){ node.remove(); return; }
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = (node.getAttribute('alt') || 'GIF').slice(0, 120);
+          img.loading = 'lazy';
+          node.replaceWith(img);
           return;
         }
         if(!RICH_TAGS.has(tag)){ node.replaceWith(...node.childNodes); return; } // keep the words, drop the tag
@@ -541,7 +601,7 @@
   // Older reviews were saved as plain text; show each line on its own, with blank lines kept
   function bodyToHTML(body){
     if(!body) return '';
-    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span|a)\b/i.test(body)) return sanitizeRichText(body);
+    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span|a|img)\b/i.test(body)) return sanitizeRichText(body);
     return body.split('\n').map(line => `<p>${escapeHtml(line) || '<br>'}</p>`).join('');
   }
 
@@ -553,7 +613,7 @@
   const SIZE_VALUES = { small: '0.85em', large: '1.25em', huge: '1.6em' };
   let savedRange = null;
 
-  function editorIsEmpty(){ return !editor.textContent.trim() && !editor.querySelector('li'); }
+  function editorIsEmpty(){ return !editor.textContent.trim() && !editor.querySelector('li, img'); }
   function refreshPlaceholder(){ editor.classList.toggle('is-empty', editorIsEmpty()); }
   function getBodyHTML(){ return editorIsEmpty() ? '' : sanitizeRichText(editor.innerHTML).trim(); }
   function setBodyHTML(body){
@@ -731,6 +791,174 @@
   });
   document.addEventListener('click', (e) => { if(!e.target.closest('.link-wrap')) closeLinkPop(); });
 
+  // ---------- GIF search ----------
+  const gifCache = new Map(); // remembers results so repeat searches don't use up the hourly limit
+  function escapeAttr(str){ return escapeHtml(str).replace(/"/g, '&quot;'); }
+  function klipyCustomerId(){
+    try {
+      let id = localStorage.getItem('klipy-cid');
+      if(!id){ id = crypto.randomUUID(); localStorage.setItem('klipy-cid', id); }
+      return id;
+    } catch(e) { return 'anonymous'; }
+  }
+  // KLIPY offers each GIF in several sizes; use a small one for the picker and a medium one for the comment
+  function gifUrls(item){
+    const files = item.file || item.files || {};
+    const at = (path) => {
+      const v = path.split('.').reduce((o, k) => (o == null ? o : o[k]), files);
+      return typeof v === 'string' ? v : (v && typeof v.url === 'string' ? v.url : null);
+    };
+    const first = (paths) => { for(const path of paths){ const u = at(path); if(u) return u; } return null; };
+    return {
+      preview: first(['sm.gif', 'xs.gif', 'md.gif', 'gif', 'sm.webp', 'md.webp', 'hd.gif']),
+      full: first(['md.gif', 'hd.gif', 'gif', 'sm.gif', 'md.webp', 'hd.webp'])
+    };
+  }
+  async function fetchGifs(query){
+    const key = query.trim().toLowerCase();
+    if(gifCache.has(key)) return gifCache.get(key);
+    const params = new URLSearchParams({ page: '1', per_page: '24', customer_id: klipyCustomerId(), rating: GIF_RATING });
+    if(key) params.set('q', key);
+    const res = await fetch(`https://api.klipy.com/api/v1/${encodeURIComponent(KLIPY_API_KEY)}/gifs/${key ? 'search' : 'trending'}?${params}`);
+    if(res.status === 429) throw new Error('busy');
+    if(!res.ok) throw new Error('failed');
+    const json = await res.json();
+    const gifs = (json?.data?.data || [])
+      .filter(item => item && item.type !== 'ad')
+      .map(item => ({ title: item.title || 'GIF', ...gifUrls(item) }))
+      .filter(g => g.preview && g.full);
+    gifCache.set(key, gifs);
+    return gifs;
+  }
+
+  // ---------- Full emoji picker (loaded the first time someone opens it) ----------
+  const EMOJI_PICKER_SRC = 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.29.1/index.js';
+  let emojiPickerPromise = null;
+  let emojiInsert = null; // inserts into the review text at your cursor
+  function getEmojiPicker(){
+    if(!emojiPickerPromise){
+      emojiPickerPromise = new Promise((resolve, reject) => {
+        const giveUp = setTimeout(() => { emojiPickerPromise = null; reject(new Error('timeout')); }, 10000);
+        if(!customElements.get('emoji-picker')){
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.src = EMOJI_PICKER_SRC;
+          script.onerror = () => { clearTimeout(giveUp); emojiPickerPromise = null; script.remove(); reject(new Error('load')); };
+          document.head.appendChild(script);
+        }
+        customElements.whenDefined('emoji-picker').then(() => {
+          clearTimeout(giveUp);
+          const el = document.createElement('emoji-picker');
+          el.addEventListener('emoji-click', (e) => { if(emojiInsert) emojiInsert(e.detail.unicode); });
+          resolve(el);
+        });
+      });
+    }
+    return emojiPickerPromise;
+  }
+  // ---------- Emoji and GIF buttons in the editor ----------
+  const emojiPop = document.getElementById('fmt-emoji');
+  const emojiBtn = document.getElementById('fmt-emoji-btn');
+  const gifPop = document.getElementById('fmt-gif');
+  const gifBtn = document.getElementById('fmt-gif-btn');
+  const gifSearch = document.getElementById('fmt-gif-search');
+  const gifGrid = document.getElementById('fmt-gif-grid');
+  if(!GIFS_ENABLED) document.getElementById('gif-wrap').hidden = true;
+
+  function closeToolPops(except){
+    [[emojiPop, emojiBtn], [gifPop, gifBtn]].forEach(([pop, btn]) => {
+      if(pop !== except){ pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+    });
+  }
+  function openToolPop(pop, btn){
+    closeToolPops(pop);
+    colorPop.hidden = true;
+    closeLinkPop();
+    pop.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    keepOnScreen(pop);
+  }
+  function keepOnScreen(pop){
+    pop.style.left = '';
+    const r = pop.getBoundingClientRect();
+    if(r.right > window.innerWidth - 8) pop.style.left = (-(r.right - window.innerWidth + 8)) + 'px';
+  }
+  // If you haven't clicked into the text yet, add things at the end
+  function ensureCaret(){
+    if(savedRange && editor.contains(savedRange.startContainer)) return;
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    savedRange = range;
+  }
+
+  emojiBtn.addEventListener('click', async () => {
+    if(!emojiPop.hidden){ closeToolPops(); return; }
+    openToolPop(emojiPop, emojiBtn);
+    emojiInsert = (emoji) => {
+      ensureCaret();
+      restoreSelection();
+      document.execCommand('insertText', false, emoji); // the picker stays open so you can add a few in a row
+      refreshPlaceholder();
+    };
+    if(!emojiPop.querySelector('emoji-picker')) emojiPop.innerHTML = '<p class="gif-msg">Loading emojis…</p>';
+    try {
+      const picker = await getEmojiPicker();
+      picker.classList.add('light');
+      if(!emojiPop.hidden){ emojiPop.replaceChildren(picker); keepOnScreen(emojiPop); }
+    } catch(err) {
+      emojiPop.innerHTML = '<p class="gif-msg">Emojis couldn\'t load. Check your connection and try again.</p>';
+    }
+  });
+
+  let gifRequestNo = 0, gifTypingTimer = null;
+  async function loadAdminGifs(query){
+    const req = ++gifRequestNo;
+    gifGrid.innerHTML = '<p class="gif-msg">Loading GIFs…</p>';
+    try {
+      const gifs = await fetchGifs(query);
+      if(req !== gifRequestNo) return;
+      if(!gifs.length){
+        gifGrid.innerHTML = query.trim()
+          ? `<p class="gif-msg">No GIFs found for "${escapeHtml(query.trim())}". Try another word.</p>`
+          : '<p class="gif-msg">No trending GIFs right now. Try searching for one.</p>';
+        return;
+      }
+      gifGrid.innerHTML = gifs.map(g =>
+        `<button type="button" class="gif-item" data-full="${escapeAttr(g.full)}" aria-label="${escapeAttr(g.title)}"><img src="${escapeAttr(g.preview)}" alt="" loading="lazy"></button>`
+      ).join('');
+      gifGrid.querySelectorAll('.gif-item').forEach(btn => btn.addEventListener('click', () => insertGif(btn.dataset.full, btn.getAttribute('aria-label'))));
+    } catch(err) {
+      if(req !== gifRequestNo) return;
+      gifGrid.innerHTML = `<p class="gif-msg">${err.message === 'busy' ? 'GIF search is busy right now. Try again in a few minutes.' : "GIFs couldn't load. Check your connection and try again."}</p>`;
+    }
+  }
+  function insertGif(url, title){
+    const safe = safeImageSrc(url);
+    if(!safe) return;
+    ensureCaret();
+    restoreSelection();
+    document.execCommand('insertHTML', false, `<img src="${escapeAttr(safe)}" alt="${escapeAttr(title || 'GIF')}">`);
+    closeToolPops();
+    refreshPlaceholder();
+  }
+  gifBtn.addEventListener('click', () => {
+    if(!gifPop.hidden){ closeToolPops(); return; }
+    openToolPop(gifPop, gifBtn);
+    if(!gifGrid.children.length) loadAdminGifs(gifSearch.value);
+    gifSearch.focus();
+  });
+  gifSearch.addEventListener('input', () => {
+    clearTimeout(gifTypingTimer);
+    gifTypingTimer = setTimeout(() => loadAdminGifs(gifSearch.value), 450); // wait until you pause typing
+  });
+  gifSearch.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); clearTimeout(gifTypingTimer); loadAdminGifs(gifSearch.value); }
+    if(e.key === 'Escape'){ e.preventDefault(); closeToolPops(); restoreSelection(); }
+  });
+  document.addEventListener('click', (e) => { if(!e.target.closest('#emoji-wrap, #gif-wrap')) closeToolPops(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && (!emojiPop.hidden || !gifPop.hidden)) closeToolPops(); });
+
   editor.addEventListener('input', refreshPlaceholder);
   // Pasting from websites or Word brings hidden styling along; paste just the words and line breaks
   editor.addEventListener('paste', (e) => {
@@ -808,7 +1036,30 @@
     });
     if(turnstileWidgetId !== null) turnstile.reset(turnstileWidgetId);
     turnstileToken = null;
-    status.textContent = error ? error.message : 'Check your email for a password reset link.';
+    if(error){ status.textContent = error.message; return; }
+    status.textContent = '';
+    const callout = document.getElementById('reset-callout');
+    callout.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.8 6.5l8.2 6.2 8.2-6.2"/></svg>'
+      + `<div><strong>Check your email</strong><p>We sent a password reset link to <b>${escapeHtml(email)}</b>. It can take a minute or two to arrive, so check your spam folder too.</p></div>`;
+    callout.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    resetCooldownUntil = Date.now() + 60000;
+    tickResetCooldown();
+  }
+
+  // Supabase sends at most one reset email per minute; pause the button with a countdown so duplicates can't happen
+  let resetCooldownUntil = 0;
+  function tickResetCooldown(){
+    const btn = document.getElementById('admin-forgot-btn');
+    const left = Math.ceil((resetCooldownUntil - Date.now()) / 1000);
+    if(left > 0){
+      btn.disabled = true;
+      btn.textContent = `Link sent. You can send another in ${left}s`;
+      setTimeout(tickResetCooldown, 1000);
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Forgot password?';
+    }
   }
 
   async function login(){
