@@ -60,8 +60,11 @@
   #current-image img{max-width:80px;max-height:100px;border:1px solid #ddd;border-radius:4px;}
   .inline-check{display:flex;align-items:center;gap:6px;font-size:0.9rem;cursor:pointer;}
   .inline-check input{width:auto;margin:0;}
-  .form-actions{display:flex;gap:8px;align-items:center;}
-  .form-actions button{margin-bottom:0;}
+  .form-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;}
+  .form-actions button, .form-actions button.secondary{margin:0;padding:8px 16px;font-size:0.95rem;line-height:1.2;border:1px solid #BDB6A9;border-radius:4px;background:#EEEAE2;color:#1C1B19;}
+  .form-actions #publish-btn{background:#1C1B19;border-color:#1C1B19;color:#FBF9F5;font-weight:600;}
+  .form-actions button:hover{filter:brightness(0.96);}
+  .form-actions #publish-btn:hover{filter:brightness(1.25);}
   #manage-search{margin-bottom:6px;}
   .drafts-group{margin-bottom:14px;padding:4px 10px 6px;border:1px dashed #C9C1B0;border-radius:8px;background:#FBF8F1;}
   .drafts-group .manage-row:last-child{border-bottom:none;}

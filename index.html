@@ -406,13 +406,10 @@
   function formatDate(d){
     return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   }
+  const MY_LIKES = new Map(); // review id -> 'like' or 'dislike' for the logged-in person
   function getVote(id){
-    const raw = localStorage.getItem('vote-' + id);
-    return raw ? JSON.parse(raw) : null; // { type, rowId }
-  }
-  function setVote(id, vote){
-    if(vote) localStorage.setItem('vote-' + id, JSON.stringify(vote));
-    else localStorage.removeItem('vote-' + id);
+    const type = MY_LIKES.get(id);
+    return type ? { type } : null;
   }
 
   let session = null;
@@ -528,6 +525,22 @@
     else tip = 'Great password.';
     return { level, name: names[level], color: colors[level], tip, checks };
   }
+
+  // Has this password shown up in a known data breach? Uses the free Have I Been Pwned service.
+  // Only the first 5 characters of the password's SHA-1 fingerprint are sent; the password never leaves the device.
+  async function timesPasswordLeaked(password){
+    try {
+      const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(password));
+      const hash = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      const res = await fetch('https://api.pwnedpasswords.com/range/' + hash.slice(0, 5));
+      if(!res.ok) return 0;
+      const match = (await res.text()).split('\n').find(line => line.startsWith(hash.slice(5)));
+      return match ? (parseInt(match.split(':')[1], 10) || 0) : 0;
+    } catch(e) {
+      return 0; // if the check can't run (offline, blocked), don't stop the person from continuing
+    }
+  }
+  const LEAKED_PASSWORD_MESSAGE = "This password has appeared in a known data breach, which makes it easy for attackers to guess. Please choose a different one.";
 
   // ---------- Human check (Cloudflare Turnstile) ----------
   function removeTurnstile(){
@@ -728,6 +741,12 @@
       if(!turnstileToken) return setStatus('Complete the verification check above.');
       const submit = body.querySelector('.dlg-primary');
       submit.disabled = true;
+      submit.textContent = 'Checking password…';
+      if(await timesPasswordLeaked(pw.value)){
+        submit.disabled = false;
+        submit.textContent = 'Create account';
+        return setStatus(LEAKED_PASSWORD_MESSAGE);
+      }
       submit.textContent = 'Creating account…';
       setStatus('');
       const avatar = picker.current();
@@ -853,7 +872,7 @@
            { data: polls }, { data: pollOptions }, { data: pollTotals }, { data: myPollVotes }] = await Promise.all([
       sb.from('reviews').select('*').eq('status', 'published').order('created_at', {ascending:false}),
       sb.from('comments').select('*').order('created_at', {ascending:true}),
-      sb.from('likes').select('review_id, type'),
+      sb.from('likes').select('review_id, type, user_id'),
       sb.from('comment_likes').select('comment_id, user_id'),
       sb.from('profiles').select('id, avatar_icon, avatar_color'),
       sb.from('polls').select('id, review_id, question, closed, ends_at'),
@@ -871,6 +890,8 @@
         .map(o => ({ ...o, count: totals.get(o.id) || 0 })),
       myOptionId: mine.get(pl.id) || null
     }));
+    MY_LIKES.clear();
+    if(session) (likes || []).filter(l => l.user_id === session.user.id).forEach(l => MY_LIKES.set(l.review_id, l.type));
     PROFILES.clear();
     (profiles || []).forEach(p => PROFILES.set(p.id, p));
 
@@ -1364,21 +1385,21 @@
 
   // Returns true if a like/dislike was added, false if removed or failed
   async function castVote(id, type){
-    const current = getVote(id);
-    if(current && current.type === type){
-      await sb.from('likes').delete().eq('id', current.rowId);
-      setVote(id, null);
-      return false;
-    }
-    if(current) await sb.from('likes').delete().eq('id', current.rowId);
-    const { data, error } = await sb.from('likes').insert({ review_id: id, type }).select().single();
+    if(!session || !profile){ openAuthDialog('login'); return false; } // one like per account keeps counts honest
+    const current = getVote(id)?.type;
+    const mine = (q) => q.eq('review_id', id).eq('user_id', session.user.id);
+    let error;
+    if(current === type) ({ error } = await mine(sb.from('likes').delete()));            // tapping it again removes it
+    else if(current) ({ error } = await mine(sb.from('likes').update({ type })));         // switching like <-> dislike
+    else ({ error } = await sb.from('likes').insert({ review_id: id, type, user_id: session.user.id }));
     if(error){ showToast("Couldn't save your vote: " + error.message, true); return false; }
-    setVote(id, { type, rowId: data.id });
-    return true;
+    if(current === type) MY_LIKES.delete(id); else MY_LIKES.set(id, type);
+    return current !== type;
   }
 
   async function likeFromDoubleTap(cover){
     const id = cover.dataset.id;
+    if(!session || !profile){ openAuthDialog('login'); return; }
     const burst = cover.querySelector('.burst');
     burst.classList.remove('go');
     void burst.offsetWidth; // restart the animation if tapped again quickly
@@ -1511,8 +1532,8 @@
         </div>
         ${r.poll ? renderPoll(r.poll) : ''}
         <div class="actions">
-          <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="Like"><span class="heart">❤️</span> ${r.likeCount}</button>
-          <button class="like-btn vote-btn ${vote === 'dislike' ? 'liked' : ''} ${popTarget === `r-${r.id}-dislike` ? 'pop' : ''}" data-id="${r.id}" data-type="dislike" aria-pressed="${vote === 'dislike'}" title="Dislike"><span class="heart">👎</span> ${r.dislikeCount}</button>
+          <button class="like-btn vote-btn ${vote === 'like' ? 'liked' : ''} ${popTarget === `r-${r.id}-like` ? 'pop' : ''}" data-id="${r.id}" data-type="like" aria-pressed="${vote === 'like'}" title="${session ? 'Like' : 'Log in to like'}"><span class="heart">❤️</span> ${r.likeCount}</button>
+          <button class="like-btn vote-btn ${vote === 'dislike' ? 'liked' : ''} ${popTarget === `r-${r.id}-dislike` ? 'pop' : ''}" data-id="${r.id}" data-type="dislike" aria-pressed="${vote === 'dislike'}" title="${session ? 'Dislike' : 'Log in to dislike'}"><span class="heart">👎</span> ${r.dislikeCount}</button>
         </div>
         <div class="comments">
           ${r.comments.filter(c => !c.parent_comment_id).map(c => renderComment(c, r.comments, r.id, 0)).join('')}
