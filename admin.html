@@ -29,6 +29,17 @@
   .color-pop .default-color{grid-column:1 / -1;width:auto;height:auto;border-radius:6px;padding:4px 8px;font-size:0.8rem;background:#F7F3EB;}
   .editor-area{position:relative;font-family:'Nunito', system-ui, sans-serif;font-size:1.08rem;line-height:1.65;min-height:240px;max-height:70vh;overflow-y:auto;padding:14px 16px;color:#1C1B19;outline:none;}
   .editor-area p{margin:0;}
+  .editor-area a{color:#2F6F6E;text-decoration:underline;text-underline-offset:2px;}
+  .link-wrap{position:relative;display:inline-block;}
+  .link-label{text-decoration:underline;text-underline-offset:2px;}
+  .link-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:10;width:min(300px, 86vw);padding:10px;background:#fff;border:1px solid #D8D1C3;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.12);}
+  .link-pop label{display:block;font-size:0.8rem;font-weight:600;margin-bottom:4px;}
+  .link-pop input{margin-bottom:8px;font-size:0.9rem;}
+  .link-pop-actions{display:flex;gap:6px;}
+  .editor-toolbar .link-pop-actions button{border-color:#D8D1C3;}
+  .editor-toolbar #fmt-link-apply{background:#1C1B19;color:#FFFDF9;border-color:#1C1B19;}
+  .link-msg{font-size:0.78rem;color:#B3452F;margin:8px 0 0;}
+  .link-msg:empty{display:none;}
   .editor-area ul, .editor-area ol{margin:0;padding-left:1.4em;}
   .editor-area.is-empty::before{content:attr(data-placeholder);position:absolute;top:14px;left:16px;color:#9A938A;pointer-events:none;}
   button{padding:8px 16px;cursor:pointer;}
@@ -144,6 +155,18 @@
       <span class="color-wrap">
         <button type="button" id="fmt-color-btn" title="Text color" aria-label="Text color" aria-expanded="false">A<span class="color-bar" id="fmt-color-bar"></span></button>
         <div id="fmt-colors" class="color-pop" hidden></div>
+      </span>
+      <span class="link-wrap">
+        <button type="button" id="fmt-link-btn" title="Turn the selected words into a link" aria-label="Link" aria-expanded="false"><span class="link-label">Link</span></button>
+        <div id="fmt-link" class="link-pop" hidden>
+          <label for="fmt-link-url">Link address</label>
+          <input id="fmt-link-url" type="text" inputmode="url" placeholder="instagram.com/imo_reviewz" autocomplete="off" spellcheck="false">
+          <div class="link-pop-actions">
+            <button type="button" id="fmt-link-apply">Add link</button>
+            <button type="button" id="fmt-link-remove" hidden>Remove link</button>
+          </div>
+          <p id="fmt-link-msg" class="link-msg" role="alert"></p>
+        </div>
       </span>
       <span class="tb-sep" aria-hidden="true"></span>
       <button type="button" data-cmd="insertUnorderedList" title="Bulleted list" aria-label="Bulleted list">&bull; List</button>
@@ -356,6 +379,13 @@
   const RICH_TAGS = new Set(['P', 'BR', 'DIV', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'STRIKE', 'UL', 'OL', 'LI', 'SPAN', 'FONT']);
   const RICH_SIZES = new Set(['0.85em', '1.25em', '1.6em']);
   const DROP_WITH_CONTENTS = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'TEMPLATE', 'NOSCRIPT', 'SVG', 'MATH', 'TEXTAREA', 'SELECT', 'BUTTON']);
+  // Links may only point to real web addresses (http/https); tricks like "javascript:" links are removed
+  function safeLinkHref(raw){
+    try {
+      const url = new URL((raw || '').trim());
+      return (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : null;
+    } catch(e) { return null; }
+  }
   function sanitizeRichText(html){
     const tpl = document.createElement('template'); // parsed without running anything or loading anything
     tpl.innerHTML = html;
@@ -366,6 +396,17 @@
         const tag = node.tagName.toUpperCase();
         if(DROP_WITH_CONTENTS.has(tag)){ node.remove(); return; }
         clean(node);
+        if(tag === 'A'){ // a link: keep it only if it goes to a real web address, and always open it in a new tab
+          const href = safeLinkHref(node.getAttribute('href'));
+          if(!href){ node.replaceWith(...node.childNodes); return; }
+          const a = document.createElement('a');
+          a.href = href;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.append(...node.childNodes);
+          node.replaceWith(a);
+          return;
+        }
         if(!RICH_TAGS.has(tag)){ node.replaceWith(...node.childNodes); return; } // keep the words, drop the tag
         let color = null, size = null;
         if(tag === 'SPAN' || tag === 'FONT'){
@@ -395,7 +436,7 @@
   // Older reviews were saved as plain text; show each line on its own, with blank lines kept
   function bodyToHTML(body){
     if(!body) return '';
-    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span)\b/i.test(body)) return sanitizeRichText(body);
+    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span|a)\b/i.test(body)) return sanitizeRichText(body);
     return body.split('\n').map(line => `<p>${escapeHtml(line) || '<br>'}</p>`).join('');
   }
 
@@ -435,6 +476,8 @@
       try { on = document.queryCommandState(btn.dataset.cmd); } catch(e) {}
       btn.setAttribute('aria-pressed', on);
     });
+    const linkButton = document.getElementById('fmt-link-btn');
+    if(linkButton) linkButton.setAttribute('aria-pressed', !!linkAtSelection());
   }
 
   // Select these elements again after reformatting, so more formatting can be stacked on the same words
@@ -515,6 +558,73 @@
     document.getElementById('fmt-color-btn').setAttribute('aria-expanded', String(!colorPop.hidden));
   });
   document.addEventListener('click', (e) => { if(!e.target.closest('.color-wrap')){ colorPop.hidden = true; } });
+
+  // ---------- Links ----------
+  const linkPop = document.getElementById('fmt-link');
+  const linkBtn = document.getElementById('fmt-link-btn');
+  const linkInput = document.getElementById('fmt-link-url');
+  const linkMsg = document.getElementById('fmt-link-msg');
+  let linkRange = null;
+  function linkAtSelection(){
+    const node = savedRange && savedRange.commonAncestorContainer;
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    const a = el && el.closest('a');
+    return a && editor.contains(a) ? a : null;
+  }
+  // Accepts "instagram.com/name" as well as full addresses
+  function normalizeUrl(text){
+    let t = (text || '').trim();
+    if(!t) return null;
+    if(!/^[a-z][a-z0-9+.-]*:/i.test(t)) t = 'https://' + t;
+    const href = safeLinkHref(t);
+    return href && new URL(href).hostname.includes('.') ? href : null;
+  }
+  function closeLinkPop(){ linkPop.hidden = true; linkBtn.setAttribute('aria-expanded', 'false'); }
+  linkBtn.addEventListener('click', () => {
+    if(!linkPop.hidden){ closeLinkPop(); return; }
+    colorPop.hidden = true;
+    const existing = linkAtSelection();
+    linkMsg.textContent = (!existing && (!savedRange || savedRange.collapsed))
+      ? 'First select the word or words you want to turn into a link.' : '';
+    linkInput.value = existing ? existing.getAttribute('href') : '';
+    document.getElementById('fmt-link-apply').textContent = existing ? 'Update link' : 'Add link';
+    document.getElementById('fmt-link-remove').hidden = !existing;
+    linkRange = savedRange ? savedRange.cloneRange() : null;
+    linkPop.style.left = '';
+    linkPop.hidden = false;
+    linkBtn.setAttribute('aria-expanded', 'true');
+    const r = linkPop.getBoundingClientRect(); // keep the box on screen on narrow windows
+    if(r.right > window.innerWidth - 8) linkPop.style.left = (-(r.right - window.innerWidth + 8)) + 'px';
+    linkInput.focus();
+  });
+  function applyLink(){
+    const url = normalizeUrl(linkInput.value);
+    if(!url){ linkMsg.textContent = "That doesn't look like a web address. Try something like instagram.com/imo_reviewz"; return; }
+    savedRange = linkRange;
+    restoreSelection();
+    const existing = linkAtSelection();
+    if(existing) existing.setAttribute('href', url);
+    else if(savedRange && !savedRange.collapsed) document.execCommand('createLink', false, url);
+    else { linkMsg.textContent = 'First select the word or words you want to turn into a link.'; return; }
+    closeLinkPop();
+    updateToolbarState();
+    refreshPlaceholder();
+  }
+  document.getElementById('fmt-link-apply').addEventListener('click', applyLink);
+  document.getElementById('fmt-link-remove').addEventListener('click', () => {
+    savedRange = linkRange;
+    restoreSelection();
+    const a = linkAtSelection();
+    if(a) a.replaceWith(...a.childNodes);
+    closeLinkPop();
+    updateToolbarState();
+  });
+  linkInput.addEventListener('input', () => { linkMsg.textContent = ''; });
+  linkInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); applyLink(); }
+    if(e.key === 'Escape'){ e.preventDefault(); closeLinkPop(); restoreSelection(); }
+  });
+  document.addEventListener('click', (e) => { if(!e.target.closest('.link-wrap')) closeLinkPop(); });
 
   editor.addEventListener('input', refreshPlaceholder);
   // Pasting from websites or Word brings hidden styling along; paste just the words and line breaks

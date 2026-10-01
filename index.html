@@ -94,6 +94,8 @@
   .stars .stars-front{color:var(--ink);position:absolute;top:0;left:0;overflow:hidden;white-space:nowrap;}
   .entry .body{margin:0 0 16px;max-width:62ch;}
   .rich p{margin:0;}
+  .rich a{color:inherit;text-decoration:underline;text-decoration-color:var(--cat, var(--ink));text-decoration-thickness:2px;text-underline-offset:3px;transition:color .15s ease;}
+  .rich a:hover{color:var(--cat, var(--ink));}
   .rich ul, .rich ol{margin:0;padding-left:1.4em;}
   .rich b, .rich strong{font-weight:700;}
   .actions{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
@@ -1695,6 +1697,13 @@
   const RICH_TAGS = new Set(['P', 'BR', 'DIV', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'STRIKE', 'UL', 'OL', 'LI', 'SPAN', 'FONT']);
   const RICH_SIZES = new Set(['0.85em', '1.25em', '1.6em']);
   const DROP_WITH_CONTENTS = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'TEMPLATE', 'NOSCRIPT', 'SVG', 'MATH', 'TEXTAREA', 'SELECT', 'BUTTON']);
+  // Links may only point to real web addresses (http/https); tricks like "javascript:" links are removed
+  function safeLinkHref(raw){
+    try {
+      const url = new URL((raw || '').trim());
+      return (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : null;
+    } catch(e) { return null; }
+  }
   function sanitizeRichText(html){
     const tpl = document.createElement('template'); // parsed without running anything or loading anything
     tpl.innerHTML = html;
@@ -1705,6 +1714,17 @@
         const tag = node.tagName.toUpperCase();
         if(DROP_WITH_CONTENTS.has(tag)){ node.remove(); return; }
         clean(node);
+        if(tag === 'A'){ // a link: keep it only if it goes to a real web address, and always open it in a new tab
+          const href = safeLinkHref(node.getAttribute('href'));
+          if(!href){ node.replaceWith(...node.childNodes); return; }
+          const a = document.createElement('a');
+          a.href = href;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.append(...node.childNodes);
+          node.replaceWith(a);
+          return;
+        }
         if(!RICH_TAGS.has(tag)){ node.replaceWith(...node.childNodes); return; } // keep the words, drop the tag
         let color = null, size = null;
         if(tag === 'SPAN' || tag === 'FONT'){
@@ -1734,7 +1754,7 @@
   // Older reviews were saved as plain text; show each line on its own, with blank lines kept
   function bodyToHTML(body){
     if(!body) return '';
-    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span)\b/i.test(body)) return sanitizeRichText(body);
+    if(/<\/?(p|br|div|ul|ol|li|strong|em|b|i|u|s|span|a)\b/i.test(body)) return sanitizeRichText(body);
     return body.split('\n').map(line => `<p>${escapeHtml(line) || '<br>'}</p>`).join('');
   }
 
