@@ -63,7 +63,7 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--outer);transition:background-color .2s, color .2s;color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
-  .page-frame{display:flow-root;max-width:1000px;margin:0 auto;min-height:100vh;background:var(--desk);border-left:1px solid var(--frame-edge);border-right:1px solid var(--frame-edge);transition:background-color .2s;}
+  .page-frame{display:flow-root;overflow-x:clip;max-width:1000px;margin:0 auto;min-height:100vh;background:var(--desk);border-left:1px solid var(--frame-edge);border-right:1px solid var(--frame-edge);transition:background-color .2s;}
   header{width:calc(100% - 48px);max-width:680px;margin:32px auto 22px;padding:64px 32px 30px;background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--ink);border-radius:14px;}
   .site-logo{position:absolute;top:12px;left:14px;width:44px;height:44px;display:block;z-index:25;border-radius:12px;transition:transform .15s ease;}
   .site-logo svg{display:block;width:100%;height:100%;}
@@ -240,6 +240,14 @@
   .mini-heart{position:absolute;left:14px;top:2px;font-size:0.75rem;pointer-events:none;opacity:0;animation:floatUp .9s ease-out forwards;}
   @keyframes floatUp{0%{opacity:0;transform:translate(0,0) scale(.6);}15%{opacity:1;}100%{opacity:0;transform:translate(var(--dx), -34px) scale(1.1) rotate(var(--rot));}}
   @keyframes rise{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  @keyframes slideFromRight{from{opacity:.2;transform:translateX(40px);}to{opacity:1;transform:none;}}
+  @keyframes slideFromLeft{from{opacity:.2;transform:translateX(-40px);}to{opacity:1;transform:none;}}
+  @keyframes bumpLeft{0%,100%{transform:none;}35%{transform:translateX(-14px);}}
+  @keyframes bumpRight{0%,100%{transform:none;}35%{transform:translateX(14px);}}
+  #entries.slide-from-right{animation:slideFromRight .26s ease-out;}
+  #entries.slide-from-left{animation:slideFromLeft .26s ease-out;}
+  #entries.bump-left{animation:bumpLeft .3s ease-out;}
+  #entries.bump-right{animation:bumpRight .3s ease-out;}
   @keyframes fade{from{opacity:0;}to{opacity:1;}}
   #lightbox.open{animation:fade .15s ease-out;}
   button:active:not(:disabled){transform:scale(0.96);}
@@ -497,6 +505,7 @@
     auth: { storageKey: 'sb-public-auth' }
   });
   const CATS = { film: "Film", tv: "TV", game: "Game", music: "Music", announcement: "Announcement", post: "Post" };
+  const TAB_LABELS = { film: "Films", tv: "TV Shows", game: "Games", music: "Music", announcement: "Announcements", post: "Posts" };
   let ALL_REVIEWS = [];
   let currentFilter = 'all';
 
@@ -1128,11 +1137,70 @@
     const cats = ['all', ...new Set(ALL_REVIEWS.map(r => r.category))];
     const nav = document.getElementById('filters');
     nav.innerHTML = cats.map(c =>
-      `<button data-cat="${c}" class="${c===currentFilter?'active':''}">${c==='all'?'All':CATS[c]}</button>`
+      `<button data-cat="${c}" class="${c===currentFilter?'active':''}">${c==='all'?'All':(TAB_LABELS[c] || CATS[c])}</button>`
     ).join('');
     nav.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => { currentFilter = btn.dataset.cat; renderFilters(); render(currentFilter); });
+      btn.addEventListener('click', () => switchTab(btn.dataset.cat));
     });
+  }
+
+  // ---------- Switching tabs (by tapping, or by swiping on phones and tablets) ----------
+  function tabOrder(){ return [...document.querySelectorAll('#filters button')].map(b => b.dataset.cat); }
+  function playOnce(el, cls){
+    el.classList.remove('slide-from-right', 'slide-from-left', 'bump-left', 'bump-right');
+    void el.offsetWidth; // restart the animation if it's already running
+    el.classList.add(cls);
+    el.addEventListener('animationend', () => el.classList.remove(cls), { once: true });
+  }
+  function switchTab(cat){
+    if(cat === currentFilter) return;
+    const order = tabOrder();
+    const forward = order.indexOf(cat) > order.indexOf(currentFilter);
+    currentFilter = cat;
+    renderFilters();
+    render(currentFilter);
+    const entries = document.getElementById('entries');
+    playOnce(entries, forward ? 'slide-from-right' : 'slide-from-left'); // posts slide in from the side you're heading toward
+    document.querySelector('#filters button.active')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    // if you'd scrolled down, bring the top of the new list into view just under the tabs
+    const navBottom = document.querySelector('nav').getBoundingClientRect().bottom;
+    const listTop = entries.getBoundingClientRect().top;
+    if(listTop < navBottom) window.scrollBy({ top: listTop - navBottom - 12, behavior: 'smooth' });
+  }
+
+  // Drag your finger right-to-left for the next tab, left-to-right for the previous one
+  let swipeStart = null;
+  const SWIPE_MIN = 60;
+  const entriesEl = document.getElementById('entries');
+  entriesEl.addEventListener('touchstart', (e) => {
+    swipeStart = null;
+    if(e.touches.length !== 1) return;
+    const t = e.touches[0];
+    if(t.clientX < 24 || t.clientX > window.innerWidth - 24) return; // leave screen edges to the phone's own back gesture
+    if(e.target.closest('textarea, input, select, [contenteditable], .emoji-popup, .gif-popup, .comment-input-wrap')) return;
+    swipeStart = { x: t.clientX, y: t.clientY, time: Date.now() };
+  }, { passive: true });
+  entriesEl.addEventListener('touchcancel', () => { swipeStart = null; }, { passive: true });
+  entriesEl.addEventListener('touchend', (e) => {
+    if(!swipeStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipeStart.x, dy = t.clientY - swipeStart.y, quick = Date.now() - swipeStart.time < 700;
+    swipeStart = null;
+    if(!quick || Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy) * 1.8) return; // mostly sideways, not a scroll
+    if(authDialog.open || document.getElementById('lightbox').classList.contains('open')) return;
+    const order = tabOrder();
+    const next = order.indexOf(currentFilter) + (dx < 0 ? 1 : -1);
+    if(next < 0 || next >= order.length){ playOnce(entriesEl, dx < 0 ? 'bump-left' : 'bump-right'); return; } // nothing further that way
+    switchTab(order[next]);
+  }, { passive: true });
+
+  // One-time tip for people on touch screens
+  function maybeShowSwipeTip(){
+    try {
+      if(!matchMedia('(pointer: coarse)').matches || localStorage.getItem('swipe-tip-seen') || tabOrder().length < 2) return;
+      localStorage.setItem('swipe-tip-seen', '1');
+      setTimeout(() => showToast('Tip: swipe sideways on the posts to switch categories'), 2500);
+    } catch(e) {}
   }
 
   const ICONS = {
@@ -2089,6 +2157,7 @@
     scheduleAuthPrompt();
     await loadAll();
     document.getElementById('entries').removeAttribute('aria-busy');
+    maybeShowSwipeTip();
     startLiveUpdates();
   })();
 </script>
