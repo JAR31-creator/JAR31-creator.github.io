@@ -48,15 +48,15 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--outer);transition:background-color .2s, color .2s;color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
-  .page-frame{display:flow-root;max-width:960px;margin:0 auto;min-height:100vh;background:var(--desk);border-left:1px solid var(--frame-edge);border-right:1px solid var(--frame-edge);transition:background-color .2s;}
-  header{width:calc(100% - 48px);max-width:632px;margin:28px auto 18px;padding:64px 28px 26px;background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--ink);border-radius:3px;}
+  .page-frame{display:flow-root;max-width:1000px;margin:0 auto;min-height:100vh;background:var(--desk);border-left:1px solid var(--frame-edge);border-right:1px solid var(--frame-edge);transition:background-color .2s;}
+  header{width:calc(100% - 48px);max-width:680px;margin:32px auto 22px;padding:64px 32px 30px;background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--ink);border-radius:14px;}
   .site-logo{position:absolute;top:12px;left:14px;width:44px;height:44px;display:block;z-index:25;border-radius:12px;transition:transform .15s ease;}
   .site-logo svg{display:block;width:100%;height:100%;}
   .site-logo:hover{transform:translateY(-2px) rotate(-3deg);}
   .site-logo:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
   @media (min-width: 900px){
     header{padding-top:36px;}
-    .site-logo{position:fixed;top:24px;left:max(16px, calc(50% - 440px));width:72px;height:72px;border-radius:18px;}
+    .site-logo{position:fixed;top:28px;left:max(16px, calc(50% - 460px));width:72px;height:72px;border-radius:18px;}
   }
   @media (max-width: 960px){ .page-frame{border-left:none;border-right:none;} }
   .home-fab{display:none;}
@@ -69,9 +69,9 @@
     .fab-arrow{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--paper);color:var(--ink);border:1px solid var(--sheet-edge);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.2);}
     .fab-arrow svg{width:12px;height:12px;}
   }
-  h1{font-family:'Newsreader',serif;font-weight:600;font-size:2.4rem;margin:0 0 6px;}
-  header p{color:var(--ink-soft);margin:0;font-size:0.95rem;}
-  nav{max-width:680px;margin:0 auto;padding:0 24px 32px;display:flex;gap:18px;padding-bottom:14px;}
+  h1{font-family:'Newsreader',serif;font-weight:600;font-size:2.75rem;line-height:1.1;letter-spacing:-0.01em;margin:0 0 8px;}
+  header p{color:var(--ink-soft);margin:0;font-size:1.02rem;}
+  nav{max-width:728px;margin:0 auto;padding:0 24px 32px;display:flex;gap:18px;padding-bottom:14px;}
   nav button{font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px 0;border-bottom:2px solid transparent;}
   nav button.active{color:var(--ink);border-bottom-color:var(--ink);}
   nav button{transition:transform .15s ease, color .15s ease, border-color .15s ease;}
@@ -80,16 +80,24 @@
     nav button:not(.active):hover{border-bottom-color:var(--ink-soft);}
   }
   nav button:focus-visible{transform:translateY(-2px);}
-  main{max-width:680px;margin:0 auto;padding:8px 24px 64px;}
-  .entry{background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--cat, var(--sheet-edge));border-radius:3px;padding:26px 28px 22px;margin-bottom:18px;display:flow-root;}
+  main{max-width:728px;margin:0 auto;padding:8px 24px 48px;}
+  .entry{background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--cat, var(--sheet-edge));border-radius:14px;padding:26px 32px 24px;margin-bottom:22px;display:flow-root;}
   .entry[data-cat="film"]{--cat:var(--film);} .entry[data-cat="tv"]{--cat:var(--tv);} .entry[data-cat="game"]{--cat:var(--game);}
   .entry[data-cat="music"]{--cat:var(--music);} .entry[data-cat="announcement"]{--cat:var(--ink);} .entry[data-cat="post"]{--cat:var(--post);}
-  .entry-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:0.8rem;color:var(--ink-soft);}
-  .tag{font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:2px;color:#fff;}
+  .entry-meta{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:0.8rem;color:var(--ink-soft);}
+  .byline-avatar{flex:none;width:42px;height:42px;display:block;}
+  .byline-avatar svg{display:block;width:100%;height:100%;}
+  .byline-text{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .byline-name{font-size:0.95rem;font-weight:600;color:var(--ink);line-height:1.2;}
+  .byline-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .tag{font-size:0.72rem;font-weight:600;padding:2px 9px;border-radius:999px;color:#fff;}
   .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);} .tag.tv{background:var(--tv);} .tag.announcement{background:var(--ink);color:var(--paper);} .tag.post{background:var(--post);}
-  .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.5rem;margin:0 0 4px;}
+  .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.85rem;line-height:1.15;letter-spacing:-0.005em;margin:0 0 6px;}
   .subject{font-size:0.88rem;color:var(--ink-soft);margin-bottom:10px;}
-  .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;margin-bottom:10px;line-height:1;}
+  .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;line-height:1;}
+  .rating-row{display:flex;align-items:center;gap:12px;margin:2px 0 14px;}
+  .score{font-family:'Newsreader',serif;font-weight:600;font-size:1.25rem;line-height:1;color:var(--ink);}
+  .score span{font-size:0.8rem;color:var(--ink-soft);margin-left:1px;}
   .stars .stars-back{color:var(--rule);}
   .stars .stars-front{color:var(--ink);position:absolute;top:0;left:0;overflow:hidden;white-space:nowrap;}
   .entry .body{margin:0 0 16px;max-width:62ch;}
@@ -181,8 +189,10 @@
   #lightbox.open{display:flex;}
   #lightbox img{max-width:90%;max-height:90%;border-radius:4px;}
   .empty-state, .loading{padding:60px 0;color:var(--ink-soft);font-style:italic;}
-  footer{max-width:680px;margin:0 auto;padding:0 24px 60px;color:var(--ink-soft);font-size:0.8rem;}
-  #authbar{max-width:680px;margin:0 auto 10px;padding:4px 24px 8px;font-size:0.85rem;color:var(--ink-soft);}
+  footer{max-width:728px;margin:0 auto;padding:8px 24px 64px;color:var(--ink-soft);font-size:0.85rem;display:flex;flex-direction:column;gap:4px;}
+  .footer-name{font-family:'Newsreader',serif;font-style:italic;font-weight:600;font-size:1.1rem;color:var(--ink);}
+  footer a{color:var(--ink);text-underline-offset:3px;}
+  #authbar{max-width:728px;margin:0 auto 10px;padding:4px 24px 8px;font-size:0.85rem;color:var(--ink-soft);}
   #authbar button{font-family:'Inter',sans-serif;font-size:0.85rem;background:none;border:none;text-decoration:underline;cursor:pointer;color:var(--ink);padding:0;}
   #auth-forms{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
   #auth-forms input{font-family:'Inter',sans-serif;font-size:0.85rem;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;}
@@ -194,7 +204,7 @@
   .entry-head.has-cover .body{grid-area:body;margin-bottom:4px;}
   .entry-head:empty, .entry-titles:empty{display:none;}
   .cover{position:relative;margin:0;cursor:zoom-in;touch-action:manipulation;user-select:none;border-radius:4px;}
-  .cover img{display:block;width:auto;height:auto;max-width:150px;max-height:190px;border:1px solid var(--rule);border-radius:4px;transition:transform .18s ease, box-shadow .18s ease;}
+  .cover img{display:block;width:auto;height:auto;max-width:160px;max-height:210px;border:1px solid var(--rule);border-radius:10px;transition:transform .18s ease, box-shadow .18s ease;}
   .cover:hover img{transform:translateY(-4px);box-shadow:0 8px 16px var(--shadow);}
   .burst{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.2rem;opacity:0;pointer-events:none;}
   .burst.go{animation:burst .8s ease-out;}
@@ -224,7 +234,7 @@
   #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,16px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:22px;font-size:0.85rem;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:1100;max-width:calc(100% - 32px);}
   #toast.show{opacity:1;transform:translate(-50%,0);}
   #toast.error{background:var(--game);}
-  .skeleton{background:var(--paper);border:1px solid var(--sheet-edge);border-top-width:3px;border-radius:3px;padding:26px 28px;margin-bottom:18px;}
+  .skeleton{background:var(--paper);border:1px solid var(--sheet-edge);border-top-width:3px;border-radius:14px;padding:26px 32px;margin-bottom:22px;}
   .sk{background:linear-gradient(90deg,var(--sk-a) 25%,var(--sk-b) 50%,var(--sk-a) 75%);background-size:200% 100%;animation:shimmer 1.3s linear infinite;border-radius:4px;margin-bottom:10px;}
   .sk-meta{width:120px;height:12px;} .sk-title{width:55%;height:22px;} .sk-line{height:12px;} .w90{width:90%;} .w70{width:70%;}
   @keyframes shimmer{from{background-position:200% 0;}to{background-position:-200% 0;}}
@@ -261,7 +271,9 @@
     .cover img{max-width:96px;max-height:124px;}
     main{padding-left:10px;padding-right:10px;}
     .entry, .skeleton{padding:20px 18px 18px;margin-bottom:12px;}
-    .entry h2{font-size:1.3rem;}
+    .entry h2{font-size:1.45rem;}
+    .byline-avatar{width:36px;height:36px;}
+    .entry-meta{margin-bottom:12px;}
     .stars{font-size:1.3rem;}
     .comment-actions{margin-left:6px;}
     textarea, input, select{font-size:16px !important;}
@@ -382,7 +394,10 @@
 <nav id="filters"></nav>
 <div id="authbar"></div>
 <main id="entries" aria-busy="true"><div class="skeleton"><div class="sk sk-meta"></div><div class="sk sk-title"></div><div class="sk sk-line w90"></div><div class="sk sk-line w70"></div></div><div class="skeleton"><div class="sk sk-meta"></div><div class="sk sk-title"></div><div class="sk sk-line w90"></div><div class="sk sk-line w70"></div></div></main>
-<footer>Updated by hand. New entries go straight into the source.</footer>
+<footer>
+  <span class="footer-name">Just Some Reviews</span>
+  <span>More of my reviews live on Instagram: <a href="https://www.instagram.com/imo_reviewz/" target="_blank" rel="noopener noreferrer">@imo_reviewz</a></span>
+</footer>
 </div>
 
 <div id="lightbox"><img id="lightbox-img" src="" alt="Full size image"></div>
@@ -1632,14 +1647,17 @@
       return `
       <article class="entry" data-id="${r.id}" data-cat="${r.category}">
         <div class="entry-meta">
-          <span class="tag ${r.category}">${CATS[r.category]}</span>
-          <span>${formatDate(r.created_at)}</span>
+          <span class="byline-avatar" aria-hidden="true"><svg viewBox="0 0 72 72" aria-hidden="true"> <rect x="1" y="1" width="70" height="70" rx="17" style="fill:var(--ink)"/> <rect x="5.5" y="5.5" width="61" height="61" rx="13" style="fill:none;stroke:var(--paper);stroke-opacity:.3" stroke-width="1"/> <text x="36" y="42" text-anchor="middle" style="fill:var(--paper);font-family:'Newsreader',Georgia,serif;font-style:italic;font-weight:600;font-size:25px;letter-spacing:-0.5px">JSR</text> <circle cx="25.5" cy="53" r="2.4" style="fill:var(--film)"/> <circle cx="32.5" cy="53" r="2.4" style="fill:var(--tv)"/> <circle cx="39.5" cy="53" r="2.4" style="fill:var(--game)"/> <circle cx="46.5" cy="53" r="2.4" style="fill:var(--music)"/> </svg></span>
+          <div class="byline-text">
+            <span class="byline-name">Just Some Reviews</span>
+            <span class="byline-sub"><span class="tag ${r.category}">${CATS[r.category]}</span><time datetime="${r.created_at}">${formatDate(r.created_at)}</time></span>
+          </div>
         </div>
         <div class="entry-head ${r.image_url ? 'has-cover' : ''}">
           <div class="entry-titles">
             ${r.title ? `<h2>${r.title}</h2>` : ''}
             ${r.subject ? `<div class="subject">${r.subject}</div>` : ''}
-            ${r.rating != null ? `<div class="stars">${stars(r.rating)}</div>` : ''}
+            ${r.rating != null ? `<div class="rating-row"><div class="stars" aria-hidden="true">${stars(r.rating)}</div><span class="score" aria-label="Rated ${Number(r.rating)} out of 5">${Number(r.rating)}<span>/5</span></span></div>` : ''}
           </div>
           ${r.image_url ? `
           <div class="cover" data-id="${r.id}" tabindex="0" role="button" title="Click to enlarge, double-click to like" aria-label="Enlarge cover image for ${escapeHtml(r.title || r.poll?.question || 'this post')}">
