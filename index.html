@@ -109,12 +109,15 @@
   .tag.film{background:var(--film);} .tag.game{background:var(--game);} .tag.music{background:var(--music);} .tag.tv{background:var(--tv);} .tag.announcement{background:var(--ink);color:var(--paper);} .tag.post{background:var(--post);}
   .entry h2{font-family:'Newsreader',serif;font-weight:600;font-style:italic;font-size:1.85rem;line-height:1.15;letter-spacing:-0.005em;margin:0 0 6px;}
   .subject{font-size:0.88rem;color:var(--ink-soft);margin-bottom:10px;}
-  .stars{position:relative;display:inline-block;font-size:1.6rem;letter-spacing:3px;line-height:1;}
+  .stars{display:inline-flex;gap:3px;line-height:1;--star:1.5rem;}
+  .star{position:relative;display:block;width:var(--star);height:var(--star);}
+  .star svg{display:block;width:var(--star);height:var(--star);}
+  .star-back{fill:var(--rule);}
+  .star-fill{position:absolute;top:0;left:0;height:100%;overflow:hidden;}
+  .star-fill svg{fill:var(--ink);}
   .rating-row{display:flex;align-items:center;gap:12px;margin:2px 0 14px;}
   .score{font-family:'Newsreader',serif;font-weight:600;font-size:1.25rem;line-height:1;color:var(--ink);}
   .score span{font-size:0.8rem;color:var(--ink-soft);margin-left:1px;}
-  .stars .stars-back{color:var(--rule);}
-  .stars .stars-front{color:var(--ink);position:absolute;top:0;left:0;overflow:hidden;white-space:nowrap;}
   .entry .body{margin:0 0 16px;max-width:62ch;}
   .rich p{margin:0;}
   .rich a{color:inherit;text-decoration:underline;text-decoration-color:var(--cat, var(--ink));text-decoration-thickness:2px;text-underline-offset:3px;transition:color .15s ease;}
@@ -312,7 +315,7 @@
     .entry h2{font-size:1.45rem;}
     .byline-avatar{width:36px;height:36px;}
     .entry-meta{margin-bottom:12px;}
-    .stars{font-size:1.3rem;}
+    .stars{--star:1.3rem;}
     .comment-actions{margin-left:6px;}
     textarea, input, select{font-size:16px !important;}
     #auth-forms form > input, #auth-forms form > div{flex:1 1 100%;}
@@ -509,9 +512,19 @@
   let ALL_REVIEWS = [];
   let currentFilter = 'all';
 
+  // Five stars, each filled by exactly its share of the score (4.8 = four full stars and one 80% star)
+  const STAR_PATH = 'M12 2.5l2.94 6.1 6.56.82-4.82 4.6 1.24 6.58L12 17.3l-5.92 3.3 1.24-6.58-4.82-4.6 6.56-.82z';
   function stars(n){
-    const pct = Math.max(0, Math.min(100, (n / 5) * 100));
-    return `<span class="stars-back">★★★★★</span><span class="stars-front" style="width:${pct}%">★★★★★</span>`;
+    const score = Math.max(0, Math.min(5, Number(n) || 0));
+    let html = '';
+    for(let i = 0; i < 5; i++){
+      const share = Math.max(0, Math.min(1, score - i));
+      // the star shape spans 2.5 to 21.5 of its 24-wide box, so map the share onto the visible shape
+      const width = share <= 0 ? 0 : share >= 1 ? 100 : ((2.5 + 19 * share) / 24) * 100;
+      html += `<span class="star"><svg class="star-back" viewBox="0 0 24 24"><path d="${STAR_PATH}"/></svg>`
+            + `<span class="star-fill" style="width:${width.toFixed(1)}%"><svg viewBox="0 0 24 24"><path d="${STAR_PATH}"/></svg></span></span>`;
+    }
+    return html;
   }
   function formatDate(d){
     return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
@@ -1779,7 +1792,7 @@
           <div class="entry-titles">
             ${r.title ? `<h2>${r.title}</h2>` : ''}
             ${r.subject ? `<div class="subject">${r.subject}</div>` : ''}
-            ${r.rating != null ? `<div class="rating-row"><div class="stars" aria-hidden="true">${stars(r.rating)}</div><span class="score" aria-label="Rated ${Number(r.rating)} out of 5">${Number(r.rating)}<span>/5</span></span></div>` : ''}
+            ${r.rating != null ? `<div class="rating-row"><div class="stars" aria-hidden="true">${stars(r.rating)}</div><span class="score" aria-label="Rated ${Number(r.rating).toFixed(1)} out of 5">${Number(r.rating).toFixed(1)}<span>/5</span></span></div>` : ''}
           </div>
           ${r.image_url ? `
           <div class="cover" data-id="${r.id}" tabindex="0" role="button" title="Click to enlarge, double-click to like" aria-label="Enlarge cover image for ${escapeHtml(r.title || r.poll?.question || 'this post')}">

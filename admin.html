@@ -78,6 +78,20 @@
   .manage-row button.edit-btn{background:#eee;color:#1C1B19;border:1px solid #ccc;}
   .month-group .manage-row{padding-left:14px;}
   [hidden]{display:none !important;}
+  .rating-field{margin-bottom:12px;}
+  .rating-field > label{display:block;font-size:0.85rem;font-weight:600;margin-bottom:4px;}
+  .rating-inputs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .rating-inputs #rating{width:64px;margin:0;text-align:center;font-size:1.05rem;font-weight:600;}
+  .rating-inputs #rating.invalid{border-color:#B3452F;outline:1px solid #B3452F;}
+  .rating-of{color:#5A5751;}
+  .rating-inputs #rating-slider{flex:1;min-width:120px;width:auto;margin:0;padding:0;accent-color:#1C1B19;}
+  .rating-field .poll-hint{margin:6px 0 0;}
+  .stars{display:inline-flex;gap:3px;line-height:1;--star:1.35rem;}
+  .star{position:relative;display:block;width:var(--star);height:var(--star);}
+  .star svg{display:block;width:var(--star);height:var(--star);}
+  .star-back{fill:#DEDACF;}
+  .star-fill{position:absolute;top:0;left:0;height:100%;overflow:hidden;}
+  .star-fill svg{fill:#1C1B19;}
   .link-btn{background:none;border:none;padding:0;margin-top:10px;font-size:0.85rem;color:#2F5D8A;text-decoration:underline;cursor:pointer;}
   .link-btn:disabled{color:#7A756C;text-decoration:none;cursor:default;}
   .callout{display:flex;gap:12px;align-items:flex-start;margin:0 0 16px;padding:14px 16px;border-radius:10px;border:1.5px solid #2F6F6E;background:#EEF5F2;color:#1C1B19;animation:calloutIn .25s ease-out;}
@@ -196,17 +210,16 @@
   </select>
   <input id="title" placeholder="Title (e.g. Past Lives)">
   <input id="subject" placeholder="Subject line (e.g. Directed by Celine Song, 2023)">
-  <select id="rating">
-    <option value="5">5 stars</option>
-    <option value="4.5">4.5 stars</option>
-    <option value="4">4 stars</option>
-    <option value="3.5">3.5 stars</option>
-    <option value="3">3 stars</option>
-    <option value="2.5">2.5 stars</option>
-    <option value="2">2 stars</option>
-    <option value="1.5">1.5 stars</option>
-    <option value="1">1 star</option>
-  </select>
+  <div id="rating-field" class="rating-field">
+    <label for="rating">Rating</label>
+    <div class="rating-inputs">
+      <input id="rating" type="text" inputmode="decimal" value="4.0" maxlength="3" aria-describedby="rating-hint">
+      <span class="rating-of">/ 5</span>
+      <input id="rating-slider" type="range" min="1" max="5" step="0.1" value="4" aria-label="Rating slider">
+      <span id="rating-preview" class="stars" aria-hidden="true"></span>
+    </div>
+    <p id="rating-hint" class="poll-hint">Any score from 1.0 to 5.0, like 4.8 or 3.9.</p>
+  </div>
   <div class="editor">
     <div class="editor-toolbar" role="toolbar" aria-label="Text formatting">
       <select id="fmt-size" aria-label="Text size" title="Text size">
@@ -967,6 +980,45 @@
   });
   setBodyHTML('');
 
+  // Five stars, each filled by exactly its share of the score (4.8 = four full stars and one 80% star)
+  const STAR_PATH = 'M12 2.5l2.94 6.1 6.56.82-4.82 4.6 1.24 6.58L12 17.3l-5.92 3.3 1.24-6.58-4.82-4.6 6.56-.82z';
+  function stars(n){
+    const score = Math.max(0, Math.min(5, Number(n) || 0));
+    let html = '';
+    for(let i = 0; i < 5; i++){
+      const share = Math.max(0, Math.min(1, score - i));
+      // the star shape spans 2.5 to 21.5 of its 24-wide box, so map the share onto the visible shape
+      const width = share <= 0 ? 0 : share >= 1 ? 100 : ((2.5 + 19 * share) / 24) * 100;
+      html += `<span class="star"><svg class="star-back" viewBox="0 0 24 24"><path d="${STAR_PATH}"/></svg>`
+            + `<span class="star-fill" style="width:${width.toFixed(1)}%"><svg viewBox="0 0 24 24"><path d="${STAR_PATH}"/></svg></span></span>`;
+    }
+    return html;
+  }
+
+  // ---------- Rating: type a score or drag the slider; the stars preview it live ----------
+  const ratingInput = document.getElementById('rating');
+  const ratingSlider = document.getElementById('rating-slider');
+  function readRating(){
+    const v = parseFloat(String(ratingInput.value).trim().replace(',', '.'));
+    return Number.isFinite(v) ? Math.round(v * 10) / 10 : NaN;
+  }
+  function setRating(v){
+    const score = Math.max(1, Math.min(5, Math.round(v * 10) / 10));
+    ratingInput.value = score.toFixed(1);
+    ratingSlider.value = score;
+    document.getElementById('rating-preview').innerHTML = stars(score);
+    ratingInput.classList.remove('invalid');
+  }
+  ratingInput.addEventListener('input', () => {
+    const v = readRating();
+    const ok = v >= 1 && v <= 5;
+    ratingInput.classList.toggle('invalid', !ok && ratingInput.value.trim() !== '');
+    if(ok){ ratingSlider.value = v; document.getElementById('rating-preview').innerHTML = stars(v); }
+  });
+  ratingInput.addEventListener('blur', () => { const v = readRating(); if(v >= 1 && v <= 5) setRating(v); });
+  ratingSlider.addEventListener('input', () => setRating(parseFloat(ratingSlider.value)));
+  setRating(4);
+
   function escapeHtml(str){
     const d = document.createElement('div');
     d.textContent = str || '';
@@ -1098,7 +1150,7 @@
       document.getElementById('title').placeholder = copy.title.replace(/^Title/, 'Title, optional with a poll');
       document.getElementById('body').dataset.placeholder = copy.body + ' (optional with a poll)';
     }
-    document.getElementById('rating').hidden = key !== 'review';
+    document.getElementById('rating-field').hidden = key !== 'review';
     const pollLocked = !!editing && !editing.isDraft; // a published post's poll can't change; a draft's still can
     document.getElementById('poll-section').hidden = key === 'review' || pollLocked;
     document.getElementById('poll-locked-note').hidden = !(pollLocked && editing.hasPoll);
@@ -1187,7 +1239,7 @@
     document.getElementById('title').value = r.title || '';
     document.getElementById('subject').value = r.subject || '';
     setBodyHTML(r.body || '');
-    if(r.rating != null) document.getElementById('rating').value = String(parseFloat(r.rating));
+    if(r.rating != null) setRating(parseFloat(r.rating));
     document.getElementById('image').value = '';
     document.getElementById('remove-image').checked = false;
     document.getElementById('current-image').hidden = !r.image_url;
@@ -1225,7 +1277,9 @@
     const subject = document.getElementById('subject').value.trim();
     const category = document.getElementById('category').value;
     const isReview = !NON_REVIEW.includes(category);
-    const rating = isReview ? parseFloat(document.getElementById('rating').value) : null;
+    const ratingValue = readRating();
+    const ratingOk = ratingValue >= 1 && ratingValue <= 5;
+    const rating = isReview && ratingOk ? ratingValue : null;
     const body = getBodyHTML();
     const imageFile = document.getElementById('image').files[0];
     const status = document.getElementById('status');
@@ -1250,6 +1304,7 @@
         return;
       }
     } else {
+      if(isReview && !ratingOk){ status.textContent = "Enter a rating from 1.0 to 5.0, like 4.8 or 3.9."; return; }
       if(!hasPoll && (!title || !body)){
         status.textContent = isReview
           ? "Title and text are required."
