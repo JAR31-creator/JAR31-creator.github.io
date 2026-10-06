@@ -232,6 +232,8 @@
   .entry-head.has-cover{display:grid;grid-template-columns:minmax(0, 1fr) auto;grid-template-rows:auto 1fr;grid-template-areas:"titles cover" "body cover";column-gap:24px;align-items:start;margin-bottom:12px;}
   .entry-head.has-cover .entry-titles{grid-area:titles;}
   .entry-head.has-cover .cover{grid-area:cover;justify-self:end;}
+  /* cover follows the reader down a long review, but never leaves its own post */
+  .entry-head.has-cover .cover{position:sticky;top:calc(var(--nav-h, 64px) + 14px);}
   .entry-head.has-cover .body{grid-area:body;margin-bottom:4px;}
   .entry-head:empty, .entry-titles:empty{display:none;}
   .cover{position:relative;margin:0;cursor:zoom-in;touch-action:manipulation;user-select:none;border-radius:4px;}
@@ -352,6 +354,7 @@
     nav, main, footer, #authbar{padding-left:16px;padding-right:16px;}
     nav{gap:20px;}
     .entry-head.has-cover{grid-template-areas:"titles cover" "body body";column-gap:14px;row-gap:12px;}
+    .entry-head.has-cover .cover{position:relative;top:auto;}
     .cover img{max-width:96px;max-height:124px;}
     main{padding-left:10px;padding-right:10px;}
     .entry, .skeleton{padding:20px 18px 18px;margin-bottom:12px;}
@@ -2139,6 +2142,16 @@
   function currentThemeChoice(){
     try { return localStorage.getItem('theme') || 'system'; } catch(e) { return 'system'; }
   }
+
+  // Keep long-review covers tucked just under the sticky tabs bar
+  (function trackNavHeight(){
+    const nav = document.querySelector('nav');
+    if(!nav) return;
+    const set = () => document.documentElement.style.setProperty('--nav-h', nav.offsetHeight + 'px');
+    set();
+    if(window.ResizeObserver) new ResizeObserver(set).observe(nav);
+    else window.addEventListener('resize', set);
+  })();
   function syncThemeColor(){
     const paper = getComputedStyle(document.documentElement).getPropertyValue('--desk').trim();
     document.querySelector('meta[name="theme-color"]').setAttribute('content', paper);
