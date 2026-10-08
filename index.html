@@ -14,9 +14,14 @@
   // ---------- Holiday themes: each one turns itself on and off by date (month-day, in the visitor's own time zone) ----------
   // To add a holiday later, add a line here and its decoration below.
   const SEASONS = [
-    { name: 'halloween', from: '10-01', to: '10-31' },
+    { name: 'halloween',    from: '10-01', to: '10-31' },
+    { name: 'thanksgiving', from: '11-01', to: '11-30' },
+    { name: 'christmas',    from: '12-01', to: '12-25' },
+    { name: 'newyear',      from: '12-26', to: '12-31' }, // ball + countdown clock
+    { name: 'newyearday',   from: '01-01', to: '01-01' }, // fireworks
+    { name: 'valentines',   from: '02-01', to: '02-14' },
   ];
-  // To preview or pause themes: 'halloween' shows it any day, 'off' hides all themes, null follows the dates
+  // To preview or pause themes: 'halloween', 'thanksgiving', 'christmas', 'newyear', 'newyearday' or 'valentines' shows that one any day, 'off' hides all themes, null follows the dates
   const SEASON_OVERRIDE = null;
   (function(){
     const now = new Date();
@@ -26,8 +31,7 @@
     if(active) document.documentElement.dataset.season = active;
   })();
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
@@ -315,14 +319,100 @@
   .season-decor{display:none;}
   :root[data-season] header{margin-bottom:46px;} /* room for the decoration, clear of the tabs bar */
   :root[data-season="halloween"] header{border-top-color:#E8772E;}
-  :root[data-season="halloween"] .season-decor.halloween{display:block;position:absolute;right:34px;bottom:-30px;width:108px;z-index:2;cursor:default;}
+  :root[data-season="thanksgiving"] header{border-top-color:#C8702A;}
+  :root[data-season="christmas"] header{border-top-color:#C8323A;}
+  :root[data-season="newyear"] header, :root[data-season="newyearday"] header{border-top-color:#D4AF37;}
+  :root[data-season="valentines"] header{border-top-color:#E0457B;}
+  :root[data-season="halloween"] .season-decor.halloween,
+  :root[data-season="thanksgiving"] .season-decor.thanksgiving,
+  :root[data-season="newyear"] .season-decor.newyear,
+  :root[data-season="newyearday"] .season-decor.newyearday,
+  :root[data-season="valentines"] .season-decor.valentines,
+  :root[data-season="christmas"] .season-decor.christmas{display:block;position:absolute;right:34px;bottom:-30px;width:108px;z-index:2;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+  /* holiday background glows (where the teal and purple sit the rest of the year) */
+  :root[data-season="thanksgiving"]{--glow-a:rgba(200,112,42,0.20); --glow-b:rgba(150,40,40,0.15); --glow-c:rgba(214,160,40,0.17);}
+  :root[data-season="newyear"], :root[data-season="newyearday"]{--glow-a:rgba(212,170,50,0.20); --glow-b:rgba(110,130,220,0.16); --glow-c:rgba(180,90,210,0.13);}
+  :root[data-season="valentines"]{--glow-a:rgba(230,80,130,0.18); --glow-b:rgba(200,40,70,0.15); --glow-c:rgba(245,150,180,0.20);}
+  :root[data-season="newyear"][data-theme="dark"], :root[data-season="newyearday"][data-theme="dark"]{--glow-a:rgba(222,180,60,0.24); --glow-b:rgba(90,120,230,0.26); --glow-c:rgba(170,80,210,0.18);}
+  :root[data-season="valentines"][data-theme="dark"]{--glow-a:rgba(230,70,130,0.26); --glow-b:rgba(200,30,70,0.24); --glow-c:rgba(245,140,180,0.14);}
+  :root[data-season="christmas"]{--glow-a:rgba(200,50,58,0.16); --glow-b:rgba(30,120,70,0.17); --glow-c:rgba(214,170,60,0.13);}
+  :root[data-season="thanksgiving"][data-theme="dark"]{--glow-a:rgba(214,110,30,0.26); --glow-b:rgba(150,36,40,0.26); --glow-c:rgba(214,160,40,0.15);}
+  :root[data-season="christmas"][data-theme="dark"]{--glow-a:rgba(200,40,50,0.24); --glow-b:rgba(30,130,72,0.26); --glow-c:rgba(220,175,60,0.12);}
+  @media (prefers-color-scheme: dark){
+    :root[data-season="thanksgiving"]:not([data-theme="light"]){--glow-a:rgba(214,110,30,0.26); --glow-b:rgba(150,36,40,0.26); --glow-c:rgba(214,160,40,0.15);}
+    :root[data-season="newyear"]:not([data-theme="light"]), :root[data-season="newyearday"]:not([data-theme="light"]){--glow-a:rgba(222,180,60,0.24); --glow-b:rgba(90,120,230,0.26); --glow-c:rgba(170,80,210,0.18);}
+    :root[data-season="valentines"]:not([data-theme="light"]){--glow-a:rgba(230,70,130,0.26); --glow-b:rgba(200,30,70,0.24); --glow-c:rgba(245,140,180,0.14);}
+    :root[data-season="christmas"]:not([data-theme="light"]){--glow-a:rgba(200,40,50,0.24); --glow-b:rgba(30,130,72,0.26); --glow-c:rgba(220,175,60,0.12);}
+  }
   .season-decor svg{display:block;width:100%;height:auto;overflow:visible;}
   .pumpkin-face{animation:candle 3.4s ease-in-out infinite;}
   @keyframes candle{0%,100%{opacity:1;}18%{opacity:.86;}22%{opacity:.97;}47%{opacity:.9;}52%{opacity:1;}76%{opacity:.84;}80%{opacity:.95;}}
   @keyframes pumpkinWobble{0%,100%{transform:rotate(0);}25%{transform:rotate(-7deg);}55%{transform:rotate(5deg);}80%{transform:rotate(-2deg);}}
-  @media (hover: hover){ .season-decor.halloween:hover svg{animation:pumpkinWobble .7s ease-in-out;transform-origin:50% 92%;} }
+  @keyframes turkeyStrut{0%,100%{transform:translateY(0) rotate(0);}20%{transform:translateY(-7px) rotate(-6deg);}40%{transform:translateY(0) rotate(0);}60%{transform:translateY(-7px) rotate(6deg);}80%{transform:translateY(0) rotate(0);}}
+  @keyframes tailFan{0%,100%{transform:scale(1);}30%{transform:scale(1.08) rotate(-3deg);}60%{transform:scale(1.1) rotate(3deg);}}
+  @keyframes globeShake{0%,100%{transform:rotate(0);}15%{transform:rotate(-11deg);}35%{transform:rotate(9deg);}55%{transform:rotate(-7deg);}75%{transform:rotate(4deg);}}
+  @keyframes snowFall{0%{transform:translateY(-34px);opacity:0;}15%{opacity:1;}85%{opacity:1;}100%{transform:translateY(40px);opacity:0;}}
+  .turkey-tail{transform-box:fill-box;transform-origin:50% 100%;}
+  .globe-snow circle{animation:snowFall 6s linear infinite;}
+  /* the dance: hover on a computer, tap on a phone or tablet */
+  .season-decor.halloween.dance svg{animation:pumpkinWobble .7s ease-in-out;transform-origin:50% 92%;}
+  .season-decor.thanksgiving.dance svg{animation:turkeyStrut .8s ease-in-out;transform-origin:50% 95%;}
+  .season-decor.thanksgiving.dance .turkey-tail{animation:tailFan .8s ease-in-out;}
+  .season-decor.christmas.dance svg{animation:globeShake .8s ease-in-out;transform-origin:50% 95%;}
+  .season-decor.christmas.dance .globe-snow circle{animation-duration:1.6s;}
+  @media (hover: hover){
+    .season-decor.halloween:hover svg{animation:pumpkinWobble .7s ease-in-out;transform-origin:50% 92%;}
+    .season-decor.thanksgiving:hover svg{animation:turkeyStrut .8s ease-in-out;transform-origin:50% 95%;}
+    .season-decor.thanksgiving:hover .turkey-tail{animation:tailFan .8s ease-in-out;}
+    .season-decor.christmas:hover svg{animation:globeShake .8s ease-in-out;transform-origin:50% 95%;}
+    .season-decor.christmas:hover .globe-snow circle{animation-duration:1.6s;}
+  }
+  :root[data-theme="dark"] .season-decor.thanksgiving svg{filter:drop-shadow(0 0 12px rgba(230, 140, 50, .3));}
+  :root[data-theme="dark"] .season-decor.christmas svg{filter:drop-shadow(0 0 14px rgba(190, 220, 255, .28));}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .season-decor.thanksgiving svg{filter:drop-shadow(0 0 12px rgba(230, 140, 50, .3));}
+    :root:not([data-theme="light"]) .season-decor.christmas svg{filter:drop-shadow(0 0 14px rgba(190, 220, 255, .28));}
+  }
   :root[data-theme="dark"] .season-decor.halloween svg{filter:drop-shadow(0 0 14px rgba(255, 150, 40, .38));}
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .season-decor.halloween svg{filter:drop-shadow(0 0 14px rgba(255, 150, 40, .38));} }
+
+  /* New Year's Eve ball + countdown, New Year's Day fireworks, Valentine's heart */
+  @keyframes ballBob{0%,100%{transform:translateY(0);}35%{transform:translateY(9px);}65%{transform:translateY(-3px);}}
+  @keyframes ballDrop{0%{transform:translateY(0);}85%{transform:translateY(38px);}92%{transform:translateY(34px);}100%{transform:translateY(38px);}}
+  @keyframes twinkle{0%,100%{opacity:.25;transform:scale(.7);}50%{opacity:1;transform:scale(1.15);}}
+  @keyframes burst{0%{opacity:0;transform:scale(.35);}25%{opacity:1;}70%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.08);}}
+  @keyframes fireworksPop{0%,100%{transform:scale(1);}30%{transform:scale(1.12) rotate(-3deg);}60%{transform:scale(.96) rotate(2deg);}}
+  @keyframes heartIdle{0%,100%{transform:scale(1);}10%{transform:scale(1.05);}20%{transform:scale(1);}30%{transform:scale(1.04);}40%{transform:scale(1);}}
+  @keyframes heartDance{0%,100%{transform:scale(1) rotate(0);}15%{transform:scale(1.18) rotate(-6deg);}30%{transform:scale(.95) rotate(0);}45%{transform:scale(1.18) rotate(6deg);}65%{transform:scale(1) rotate(0);}}
+  @keyframes floatHeart{0%{transform:translateY(6px);opacity:0;}30%{opacity:1;}100%{transform:translateY(-16px);opacity:0;}}
+  .nye-ball, .nye-spark, .fw-burst, .vday-heart, .vday-mini{transform-box:fill-box;transform-origin:50% 50%;}
+  .nye-spark{animation:twinkle 1.8s ease-in-out infinite;}
+  .fw-burst{animation:burst 2.6s ease-out infinite;}
+  .vday-heart{animation:heartIdle 2.6s ease-in-out infinite;transform-origin:50% 60%;}
+  .vday-mini{animation:floatHeart 3.2s ease-out infinite;}
+  .nye-num{font-family:'Inter',system-ui,sans-serif;font-weight:700;font-variant-numeric:tabular-nums;}
+  .nye-label{font-family:'Inter',system-ui,sans-serif;font-weight:600;letter-spacing:.8px;}
+  :root[data-season="newyear"] .season-decor.newyear{width:118px;}
+  @media (max-width: 560px){ :root[data-season="newyear"] .season-decor.newyear{width:84px;} }
+  .season-decor.newyear.dropping .nye-ball{animation:ballDrop 1.6s cubic-bezier(.5,0,.6,1) forwards;}
+  .season-decor.newyear.dance svg{animation:pumpkinWobble .7s ease-in-out;transform-origin:50% 95%;}
+  .season-decor.newyear.dance .nye-ball{animation:ballBob .7s ease-in-out;}
+  .season-decor.newyearday.dance svg{animation:fireworksPop .7s ease-in-out;transform-origin:50% 60%;}
+  .season-decor.newyearday.dance .fw-burst{animation-duration:.9s;}
+  .season-decor.valentines.dance svg{animation:heartDance .8s ease-in-out;transform-origin:50% 60%;}
+  @media (hover: hover){
+    .season-decor.newyear:hover svg{animation:pumpkinWobble .7s ease-in-out;transform-origin:50% 95%;}
+    .season-decor.newyear:hover .nye-ball{animation:ballBob .7s ease-in-out;}
+    .season-decor.newyearday:hover svg{animation:fireworksPop .7s ease-in-out;transform-origin:50% 60%;}
+    .season-decor.newyearday:hover .fw-burst{animation-duration:.9s;}
+    .season-decor.valentines:hover svg{animation:heartDance .8s ease-in-out;transform-origin:50% 60%;}
+  }
+  :root[data-theme="dark"] .season-decor.newyear svg, :root[data-theme="dark"] .season-decor.newyearday svg{filter:drop-shadow(0 0 14px rgba(255, 210, 110, .3));}
+  :root[data-theme="dark"] .season-decor.valentines svg{filter:drop-shadow(0 0 14px rgba(255, 90, 140, .35));}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .season-decor.newyear svg, :root:not([data-theme="light"]) .season-decor.newyearday svg{filter:drop-shadow(0 0 14px rgba(255, 210, 110, .3));}
+    :root:not([data-theme="light"]) .season-decor.valentines svg{filter:drop-shadow(0 0 14px rgba(255, 90, 140, .35));}
+  }
   .settings{position:absolute;top:16px;right:24px;}
   #settings-btn{background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:8px;border-radius:50%;display:flex;}
   #settings-btn:hover{color:var(--ink);background:var(--tint);}
@@ -348,7 +438,12 @@
     header{width:calc(100% - 20px);margin:10px auto 14px;padding:60px 18px 20px;}
     :root[data-season] header p{padding-right:74px;}
     :root[data-season] header{margin-bottom:34px;}
-    :root[data-season="halloween"] .season-decor.halloween{width:76px;right:14px;bottom:-22px;}
+    :root[data-season="halloween"] .season-decor.halloween,
+    :root[data-season="thanksgiving"] .season-decor.thanksgiving,
+    :root[data-season="newyear"] .season-decor.newyear,
+    :root[data-season="newyearday"] .season-decor.newyearday,
+    :root[data-season="valentines"] .season-decor.valentines,
+    :root[data-season="christmas"] .season-decor.christmas{width:76px;right:14px;bottom:-22px;}
     .settings{top:8px;right:10px;}
     h1{font-size:2rem;padding-right:36px;}
     nav, main, footer, #authbar{padding-left:16px;padding-right:16px;}
@@ -435,6 +530,8 @@
   .mfa-code::placeholder{letter-spacing:normal;}
   .dlg-primary{display:block;width:100%;font-family:inherit;font-size:0.95rem;font-weight:600;background:var(--ink);color:var(--paper);border:none;border-radius:22px;padding:11px 16px;cursor:pointer;margin-top:4px;}
   .dlg-primary:disabled{opacity:.5;cursor:default;}
+  .dlg-fine{text-align:center;font-size:0.78rem;color:var(--ink-soft);margin:10px 0 0;}
+  .dlg-fine a{color:var(--ink);text-underline-offset:2px;}
   .dlg-switch{text-align:center;font-size:0.85rem;color:var(--ink-soft);margin:14px 0 0;}
   .dlg-switch button, .dlg-link{background:none;border:none;padding:0;font-family:inherit;font-size:0.85rem;color:var(--ink);text-decoration:underline;cursor:pointer;}
   .dlg-link{display:block;margin:12px auto 0;}
@@ -498,6 +595,89 @@
       </g>
     </svg>
   </div>
+  <div class="season-decor thanksgiving" title="Happy Thanksgiving!" aria-hidden="true">
+    <svg viewBox="0 0 120 104" xmlns="http://www.w3.org/2000/svg">
+      <g class="turkey-tail"><ellipse cx="60" cy="34" rx="10" ry="30" fill="#B8361F" transform="rotate(-72 60 64)"/><ellipse cx="60" cy="34" rx="10" ry="30" fill="#E07A1F" transform="rotate(-48 60 64)"/><ellipse cx="60" cy="34" rx="10" ry="30" fill="#F2B233" transform="rotate(-24 60 64)"/><ellipse cx="60" cy="34" rx="10" ry="30" fill="#8A4B22" transform="rotate(0 60 64)"/><ellipse cx="60" cy="34" rx="10" ry="30" fill="#F2B233" transform="rotate(24 60 64)"/><ellipse cx="60" cy="34" rx="10" ry="30" fill="#E07A1F" transform="rotate(48 60 64)"/><ellipse cx="60" cy="34" rx="10" ry="30" fill="#B8361F" transform="rotate(72 60 64)"/><ellipse cx="60" cy="42" rx="7" ry="21" fill="#E07A1F" transform="rotate(-54 60 64)"/><ellipse cx="60" cy="42" rx="7" ry="21" fill="#C9481F" transform="rotate(-27 60 64)"/><ellipse cx="60" cy="42" rx="7" ry="21" fill="#F2B233" transform="rotate(0 60 64)"/><ellipse cx="60" cy="42" rx="7" ry="21" fill="#C9481F" transform="rotate(27 60 64)"/><ellipse cx="60" cy="42" rx="7" ry="21" fill="#E07A1F" transform="rotate(54 60 64)"/></g>
+      <path d="M50 96 L50 102 M46 102 L54 102 M70 96 L70 102 M66 102 L74 102" stroke="#E0952A" stroke-width="2.6" stroke-linecap="round"/>
+      <ellipse cx="60" cy="72" rx="25" ry="26" fill="#7A4320"/>
+      <ellipse cx="60" cy="78" rx="15" ry="17" fill="#9A5A2C"/>
+      <ellipse cx="38" cy="74" rx="7" ry="14" fill="#68381A" transform="rotate(14 38 74)"/>
+      <ellipse cx="82" cy="74" rx="7" ry="14" fill="#68381A" transform="rotate(-14 82 74)"/>
+      <ellipse cx="60" cy="47" rx="12" ry="13" fill="#8B5028"/>
+      <circle cx="55.5" cy="44" r="3.4" fill="#FFF"/><circle cx="64.5" cy="44" r="3.4" fill="#FFF"/>
+      <circle cx="56" cy="44.6" r="1.8" fill="#1C1B19"/><circle cx="64" cy="44.6" r="1.8" fill="#1C1B19"/>
+      <path d="M56.5 49 L63.5 49 L60 54.5 Z" fill="#F2B233"/>
+      <path d="M62 51 C66 53 66 59 62.5 61 C60.5 58 60.5 54 62 51 Z" fill="#D2382B"/>
+      <ellipse cx="51" cy="51" rx="2.6" ry="1.6" fill="#E86A5A" opacity=".55"/><ellipse cx="69" cy="51" rx="2.6" ry="1.6" fill="#E86A5A" opacity=".55"/>
+    </svg>
+  </div>
+  <div class="season-decor christmas" title="Merry Christmas!" aria-hidden="true">
+    <svg viewBox="0 0 120 112" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="jsrGlobeGlass" cx="40%" cy="35%" r="70%">
+          <stop offset="0" stop-color="#EAF6FF" stop-opacity=".55"/><stop offset=".7" stop-color="#9CC8E8" stop-opacity=".35"/><stop offset="1" stop-color="#5E8FB8" stop-opacity=".5"/>
+        </radialGradient>
+        <clipPath id="jsrGlobeClip"><circle cx="60" cy="50" r="38"/></clipPath>
+      </defs>
+      <circle cx="60" cy="50" r="40" fill="#1E3A55"/>
+      <g clip-path="url(#jsrGlobeClip)">
+        <rect x="20" y="10" width="80" height="80" fill="#24496A"/>
+        <ellipse cx="60" cy="86" rx="44" ry="12" fill="#F4F8FC"/>
+        <rect x="57" y="72" width="6" height="8" fill="#7A4A26"/>
+        <path d="M60 30 L76 56 L67 56 L80 74 L40 74 L53 56 L44 56 Z" fill="#2E8A55"/>
+        <path d="M60 30 L68 43 L52 43 Z" fill="#3BA265"/>
+        <circle cx="54" cy="52" r="2.2" fill="#E2453F"/><circle cx="66" cy="60" r="2.2" fill="#F2C14E"/><circle cx="52" cy="67" r="2.2" fill="#F2C14E"/><circle cx="69" cy="69" r="2.2" fill="#E2453F"/><circle cx="61" cy="47" r="1.8" fill="#9FD3FF"/>
+        <path d="M60 22.5 L62.2 27.5 L67.5 27.8 L63.4 31.1 L64.8 36.2 L60 33.3 L55.2 36.2 L56.6 31.1 L52.5 27.8 L57.8 27.5 Z" fill="#F7CF4F"/>
+        <g class="globe-snow"><circle cx="38" cy="40" r="2.1" fill="#FFFFFF" style="animation-delay:-0s"/><circle cx="52" cy="30" r="1.6" fill="#FFFFFF" style="animation-delay:-1.2s"/><circle cx="66" cy="46" r="1.6" fill="#FFFFFF" style="animation-delay:-2.6s"/><circle cx="80" cy="34" r="2.1" fill="#FFFFFF" style="animation-delay:-0.6s"/><circle cx="46" cy="58" r="1.6" fill="#FFFFFF" style="animation-delay:-3.4s"/><circle cx="74" cy="62" r="1.6" fill="#FFFFFF" style="animation-delay:-1.8s"/><circle cx="60" cy="24" r="2.1" fill="#FFFFFF" style="animation-delay:-4.2s"/><circle cx="84" cy="52" r="1.6" fill="#FFFFFF" style="animation-delay:-3.0s"/><circle cx="34" cy="62" r="1.6" fill="#FFFFFF" style="animation-delay:-5.0s"/><circle cx="56" cy="50" r="2.1" fill="#FFFFFF" style="animation-delay:-2.2s"/><circle cx="70" cy="30" r="1.6" fill="#FFFFFF" style="animation-delay:-4.8s"/><circle cx="44" cy="40" r="1.6" fill="#FFFFFF" style="animation-delay:-3.8s"/></g>
+      </g>
+      <circle cx="60" cy="50" r="40" fill="url(#jsrGlobeGlass)" stroke="#DDEFFF" stroke-opacity=".7" stroke-width="1.6"/>
+      <path d="M33 34 A30 30 0 0 1 52 19" fill="none" stroke="#FFFFFF" stroke-opacity=".75" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M34 86 L86 86 L94 106 L26 106 Z" fill="#B3262E"/>
+      <rect x="30" y="92" width="60" height="5" fill="#E2B13C"/>
+      <path d="M34 86 L86 86 L87.5 89.5 L32.5 89.5 Z" fill="#8E1C23"/>
+    </svg>
+  </div>
+  <div class="season-decor newyear" title="Counting down to New Year's!" aria-hidden="true">
+    <svg viewBox="0 0 120 118" xmlns="http://www.w3.org/2000/svg">
+      <defs><clipPath id="jsrBallClip"><circle cx="60" cy="28" r="21"/></clipPath>
+        <radialGradient id="jsrBallShine" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/><stop offset=".35" stop-color="#FFFFFF" stop-opacity=".15"/><stop offset="1" stop-color="#3A4A78" stop-opacity=".35"/></radialGradient></defs>
+      <rect x="58.2" y="4" width="3.6" height="72" rx="1.8" fill="#9AA3B5"/>
+      <rect x="54" y="70" width="12" height="6" rx="2" fill="#7D8597"/>
+      <path class="nye-spark" style="animation-delay:-0s" d="M34 8 L35.2 10.8 L38 12 L35.2 13.2 L34 16 L32.8 13.2 L30 12 L32.8 10.8 Z" fill="#FFE08A"/><path class="nye-spark" style="animation-delay:-0.6s" d="M88 12 L89.2 14.8 L92 16 L89.2 17.2 L88 20 L86.8 17.2 L84 16 L86.8 14.8 Z" fill="#FFE08A"/><path class="nye-spark" style="animation-delay:-1.2s" d="M30 36 L31.2 38.8 L34 40 L31.2 41.2 L30 44 L28.8 41.2 L26 40 L28.8 38.8 Z" fill="#FFE08A"/><path class="nye-spark" style="animation-delay:-0.3s" d="M92 40 L93.2 42.8 L96 44 L93.2 45.2 L92 48 L90.8 45.2 L88 44 L90.8 42.8 Z" fill="#FFE08A"/><path class="nye-spark" style="animation-delay:-0.9s" d="M80 0 L81.2 2.8 L84 4 L81.2 5.2 L80 8 L78.8 5.2 L76 4 L78.8 2.8 Z" fill="#FFE08A"/>
+      <g class="nye-ball">
+        <circle cx="60" cy="28" r="21.5" fill="#6F7DA0"/>
+        <g clip-path="url(#jsrBallClip)"><rect x="50.6" y="5.8" width="6" height="6" fill="#A7B3CE"/><rect x="57.0" y="5.8" width="6" height="6" fill="#B9C4DA"/><rect x="63.4" y="5.8" width="6" height="6" fill="#D3DBEB"/><rect x="44.2" y="12.2" width="6" height="6" fill="#E8EEF8"/><rect x="50.6" y="12.2" width="6" height="6" fill="#8F9CBA"/><rect x="57.0" y="12.2" width="6" height="6" fill="#A7B3CE"/><rect x="63.4" y="12.2" width="6" height="6" fill="#B9C4DA"/><rect x="69.8" y="12.2" width="6" height="6" fill="#D3DBEB"/><rect x="37.8" y="18.6" width="6" height="6" fill="#B9C4DA"/><rect x="44.2" y="18.6" width="6" height="6" fill="#D3DBEB"/><rect x="50.6" y="18.6" width="6" height="6" fill="#E8EEF8"/><rect x="57.0" y="18.6" width="6" height="6" fill="#8F9CBA"/><rect x="63.4" y="18.6" width="6" height="6" fill="#A7B3CE"/><rect x="69.8" y="18.6" width="6" height="6" fill="#B9C4DA"/><rect x="76.2" y="18.6" width="6" height="6" fill="#D3DBEB"/><rect x="37.8" y="25.0" width="6" height="6" fill="#A7B3CE"/><rect x="44.2" y="25.0" width="6" height="6" fill="#B9C4DA"/><rect x="50.6" y="25.0" width="6" height="6" fill="#D3DBEB"/><rect x="57.0" y="25.0" width="6" height="6" fill="#E8EEF8"/><rect x="63.4" y="25.0" width="6" height="6" fill="#8F9CBA"/><rect x="69.8" y="25.0" width="6" height="6" fill="#A7B3CE"/><rect x="76.2" y="25.0" width="6" height="6" fill="#B9C4DA"/><rect x="37.8" y="31.4" width="6" height="6" fill="#8F9CBA"/><rect x="44.2" y="31.4" width="6" height="6" fill="#A7B3CE"/><rect x="50.6" y="31.4" width="6" height="6" fill="#B9C4DA"/><rect x="57.0" y="31.4" width="6" height="6" fill="#D3DBEB"/><rect x="63.4" y="31.4" width="6" height="6" fill="#E8EEF8"/><rect x="69.8" y="31.4" width="6" height="6" fill="#8F9CBA"/><rect x="76.2" y="31.4" width="6" height="6" fill="#A7B3CE"/><rect x="44.2" y="37.8" width="6" height="6" fill="#8F9CBA"/><rect x="50.6" y="37.8" width="6" height="6" fill="#A7B3CE"/><rect x="57.0" y="37.8" width="6" height="6" fill="#B9C4DA"/><rect x="63.4" y="37.8" width="6" height="6" fill="#D3DBEB"/><rect x="69.8" y="37.8" width="6" height="6" fill="#E8EEF8"/><rect x="50.6" y="44.2" width="6" height="6" fill="#8F9CBA"/><rect x="57.0" y="44.2" width="6" height="6" fill="#A7B3CE"/><rect x="63.4" y="44.2" width="6" height="6" fill="#B9C4DA"/></g>
+        <circle cx="60" cy="28" r="21" fill="url(#jsrBallShine)" stroke="#E9EEF8" stroke-opacity=".6" stroke-width=".8"/>
+        <circle cx="52" cy="20" r="2.8" fill="#FFFFFF" opacity=".9"/>
+      </g>
+      <rect x="18" y="76" width="84" height="38" rx="9" fill="#14161F" stroke="#D4AF37" stroke-width="2"/>
+      <text class="nye-num" x="60" y="98" text-anchor="middle" font-size="19" fill="#FFD76A">–</text>
+      <text class="nye-label" x="60" y="109" text-anchor="middle" font-size="7.6" fill="#C8CCD8">DAYS TO GO</text>
+    </svg>
+  </div>
+  <div class="season-decor newyearday" title="Happy New Year!" aria-hidden="true">
+    <svg viewBox="0 0 120 104" xmlns="http://www.w3.org/2000/svg">
+      <g class="fw-burst" style="animation-delay:-0s" stroke="#F5C542" stroke-width="2.2" stroke-linecap="round"><line x1="51.2" y1="40.0" x2="68.0" y2="40.0"/><circle cx="71.0" cy="40.0" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="50.2" y1="43.6" x2="64.8" y2="52.0"/><circle cx="67.4" cy="53.5" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="47.6" y1="46.2" x2="56.0" y2="60.8"/><circle cx="57.5" cy="63.4" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="44.0" y1="47.2" x2="44.0" y2="64.0"/><circle cx="44.0" cy="67.0" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="40.4" y1="46.2" x2="32.0" y2="60.8"/><circle cx="30.5" cy="63.4" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="37.8" y1="43.6" x2="23.2" y2="52.0"/><circle cx="20.6" cy="53.5" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="36.8" y1="40.0" x2="20.0" y2="40.0"/><circle cx="17.0" cy="40.0" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="37.8" y1="36.4" x2="23.2" y2="28.0"/><circle cx="20.6" cy="26.5" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="40.4" y1="33.8" x2="32.0" y2="19.2"/><circle cx="30.5" cy="16.6" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="44.0" y1="32.8" x2="44.0" y2="16.0"/><circle cx="44.0" cy="13.0" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="47.6" y1="33.8" x2="56.0" y2="19.2"/><circle cx="57.5" cy="16.6" r="1.6" fill="#FFF1B8" stroke="none"/><line x1="50.2" y1="36.4" x2="64.8" y2="28.0"/><circle cx="67.4" cy="26.5" r="1.6" fill="#FFF1B8" stroke="none"/><circle cx="44" cy="40" r="2.4" fill="#FFF1B8" stroke="none"/></g>
+      <g class="fw-burst" style="animation-delay:-0.9s" stroke="#FF5C8A" stroke-width="2.2" stroke-linecap="round"><line x1="89.4" y1="30.0" x2="102.0" y2="30.0"/><circle cx="105.0" cy="30.0" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="88.4" y1="33.2" x2="98.6" y2="40.6"/><circle cx="101.0" cy="42.3" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="85.7" y1="35.1" x2="89.6" y2="47.1"/><circle cx="90.5" cy="50.0" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="82.3" y1="35.1" x2="78.4" y2="47.1"/><circle cx="77.5" cy="50.0" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="79.6" y1="33.2" x2="69.4" y2="40.6"/><circle cx="67.0" cy="42.3" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="78.6" y1="30.0" x2="66.0" y2="30.0"/><circle cx="63.0" cy="30.0" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="79.6" y1="26.8" x2="69.4" y2="19.4"/><circle cx="67.0" cy="17.7" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="82.3" y1="24.9" x2="78.4" y2="12.9"/><circle cx="77.5" cy="10.0" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="85.7" y1="24.9" x2="89.6" y2="12.9"/><circle cx="90.5" cy="10.0" r="1.6" fill="#FFD1DF" stroke="none"/><line x1="88.4" y1="26.8" x2="98.6" y2="19.4"/><circle cx="101.0" cy="17.7" r="1.6" fill="#FFD1DF" stroke="none"/><circle cx="84" cy="30" r="2.4" fill="#FFD1DF" stroke="none"/></g>
+      <g class="fw-burst" style="animation-delay:-1.7s" stroke="#5EC8FF" stroke-width="2.2" stroke-linecap="round"><line x1="84.8" y1="72.0" x2="96.0" y2="72.0"/><circle cx="99.0" cy="72.0" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="83.9" y1="74.8" x2="92.9" y2="81.4"/><circle cx="95.4" cy="83.2" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="81.5" y1="76.6" x2="84.9" y2="87.2"/><circle cx="85.9" cy="90.1" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="78.5" y1="76.6" x2="75.1" y2="87.2"/><circle cx="74.1" cy="90.1" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="76.1" y1="74.8" x2="67.1" y2="81.4"/><circle cx="64.6" cy="83.2" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="75.2" y1="72.0" x2="64.0" y2="72.0"/><circle cx="61.0" cy="72.0" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="76.1" y1="69.2" x2="67.1" y2="62.6"/><circle cx="64.6" cy="60.8" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="78.5" y1="67.4" x2="75.1" y2="56.8"/><circle cx="74.1" cy="53.9" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="81.5" y1="67.4" x2="84.9" y2="56.8"/><circle cx="85.9" cy="53.9" r="1.6" fill="#D6F2FF" stroke="none"/><line x1="83.9" y1="69.2" x2="92.9" y2="62.6"/><circle cx="95.4" cy="60.8" r="1.6" fill="#D6F2FF" stroke="none"/><circle cx="80" cy="72" r="2.4" fill="#D6F2FF" stroke="none"/></g>
+      <g class="fw-burst" style="animation-delay:-0.4s" stroke="#B98CFF" stroke-width="2.2" stroke-linecap="round"><line x1="39.3" y1="80.0" x2="47.0" y2="80.0"/><circle cx="50.0" cy="80.0" r="1.6" fill="#EBDDFF" stroke="none"/><line x1="38.3" y1="82.3" x2="43.8" y2="87.8"/><circle cx="45.9" cy="89.9" r="1.6" fill="#EBDDFF" stroke="none"/><line x1="36.0" y1="83.3" x2="36.0" y2="91.0"/><circle cx="36.0" cy="94.0" r="1.6" fill="#EBDDFF" stroke="none"/><line x1="33.7" y1="82.3" x2="28.2" y2="87.8"/><circle cx="26.1" cy="89.9" r="1.6" fill="#EBDDFF" stroke="none"/><line x1="32.7" y1="80.0" x2="25.0" y2="80.0"/><circle cx="22.0" cy="80.0" r="1.6" fill="#EBDDFF" stroke="none"/><line x1="33.7" y1="77.7" x2="28.2" y2="72.2"/><circle cx="26.1" cy="70.1" r="1.6" fill="#EBDDFF" stroke="none"/><line x1="36.0" y1="76.7" x2="36.0" y2="69.0"/><circle cx="36.0" cy="66.0" r="1.6" fill="#EBDDFF" stroke="none"/><line x1="38.3" y1="77.7" x2="43.8" y2="72.2"/><circle cx="45.9" cy="70.1" r="1.6" fill="#EBDDFF" stroke="none"/><circle cx="36" cy="80" r="2.4" fill="#EBDDFF" stroke="none"/></g>
+      <path d="M44 66 Q43 82 46 100" fill="none" stroke="#F5C542" stroke-opacity=".35" stroke-width="1.6" stroke-dasharray="2 3"/>
+    </svg>
+  </div>
+  <div class="season-decor valentines" title="Happy Valentine's Day!" aria-hidden="true">
+    <svg viewBox="0 0 120 104" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="jsrHeartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF6B95"/><stop offset="1" stop-color="#D21F4E"/></linearGradient></defs>
+      <path class="vday-mini" style="animation-delay:-.4s" d="M18 40 C14 36 14 31 18 30 C20 29.5 21.5 31 22 32 C22.5 31 24 29.5 26 30 C30 31 30 36 26 40 L22 43.5 Z" fill="#FF9AB6"/>
+      <path class="vday-mini" style="animation-delay:-1.9s" d="M96 30 C93 27 93 23 96 22.3 C97.5 22 98.6 23 99 23.8 C99.4 23 100.5 22 102 22.3 C105 23 105 27 102 30 L99 32.6 Z" fill="#FFC2D3"/>
+      <path class="vday-mini" style="animation-delay:-2.7s" d="M100 66 C97 63 97 59 100 58.3 C101.5 58 102.6 59 103 59.8 C103.4 59 104.5 58 106 58.3 C109 59 109 63 106 66 L103 68.6 Z" fill="#FF7FA3"/>
+      <g class="vday-heart">
+        <path d="M60 98 C24 74 10 52 20 32 C29 15 50 16 60 34 C70 16 91 15 100 32 C110 52 96 74 60 98 Z" fill="url(#jsrHeartFill)"/>
+        <path d="M60 98 C24 74 10 52 20 32 C29 15 50 16 60 34 C70 16 91 15 100 32 C110 52 96 74 60 98 Z" fill="none" stroke="#A3143A" stroke-opacity=".35" stroke-width="1.5"/>
+        <ellipse cx="36" cy="38" rx="9" ry="5.5" fill="#FFFFFF" opacity=".45" transform="rotate(-35 36 38)"/>
+        <circle cx="44" cy="31" r="2.2" fill="#FFFFFF" opacity=".7"/>
+      </g>
+    </svg>
+  </div>
   <h1>Just Some Reviews</h1>
   <p>One person's honest notes on films, TV, games, and records.</p>
 </header>
@@ -508,6 +688,7 @@
 <footer>
   <span class="footer-name">Just Some Reviews</span>
   <span>More of my reviews live on Instagram: <a href="https://www.instagram.com/imo_reviewz/" target="_blank" rel="noopener noreferrer">@imo_reviewz</a></span>
+  <span><a href="privacy.html">Privacy</a></span>
 </footer>
 </div>
 
@@ -807,6 +988,7 @@
           <div id="turnstile-auth-container"></div>
           <div id="auth-status" role="alert"></div>
           <button type="submit" class="dlg-primary">Create account</button>
+          <p class="dlg-fine">Your name shows next to your comments; your email stays private. <a href="privacy.html" target="_blank" rel="noopener">How your info is used</a></p>
           <p class="dlg-switch">Already have an account? <button type="button" data-mode="login">Log in</button></p>
           ${authPromptMode ? '<button type="button" class="dlg-later">Maybe later</button>' : ''}
         </form>`;
@@ -2151,6 +2333,50 @@
     set();
     if(window.ResizeObserver) new ResizeObserver(set).observe(nav);
     else window.addEventListener('resize', set);
+  })();
+
+  // Holiday icon dances when tapped (phones/tablets) or clicked; hover still works on computers
+  document.querySelectorAll('.season-decor').forEach(el => {
+    el.addEventListener('click', () => {
+      el.classList.remove('dance');
+      void el.offsetWidth; // restart the dance if tapped again mid-move
+      el.classList.add('dance');
+    });
+    el.addEventListener('animationend', e => { if(e.target === el.querySelector('svg')) el.classList.remove('dance'); });
+  });
+
+  // New Year's Eve countdown: days until New Year's Day, then a live clock on Dec 31 and a ball drop at midnight
+  (function newYearCountdown(){
+    const box = document.querySelector('.season-decor.newyear');
+    if(!box) return;
+    const num = box.querySelector('.nye-num'), label = box.querySelector('.nye-label');
+    const pad = n => String(n).padStart(2, '0');
+    let timer = null, dropped = false;
+    function tick(){
+      if(document.documentElement.dataset.season !== 'newyear') return;
+      const now = new Date();
+      const newYear = new Date(now.getFullYear() + 1, 0, 1);              // midnight, Jan 1, visitor's own time zone
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const days = Math.round((newYear - todayStart) / 86400000);
+      if(days > 1){
+        num.textContent = days; num.setAttribute('font-size', '19');
+        label.textContent = 'DAYS TO GO';
+        box.title = days + ' days until New Year\'s Day!';
+      } else {                                                           // New Year's Eve: count down the hours
+        const left = Math.max(0, Math.floor((newYear - now) / 1000));
+        num.textContent = pad(Math.floor(left / 3600)) + ':' + pad(Math.floor(left / 60) % 60) + ':' + pad(left % 60);
+        num.setAttribute('font-size', '15');
+        label.textContent = 'UNTIL MIDNIGHT';
+        box.title = 'Almost New Year\'s!';
+        if(left === 0 && !dropped){
+          dropped = true; clearInterval(timer);
+          box.classList.add('dropping');                                 // the ball drops, then the fireworks take over
+          setTimeout(() => { document.documentElement.dataset.season = 'newyearday'; }, 1900);
+        }
+      }
+    }
+    tick();
+    timer = setInterval(tick, 1000);
   })();
   function syncThemeColor(){
     const paper = getComputedStyle(document.documentElement).getPropertyValue('--desk').trim();

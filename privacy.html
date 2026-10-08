@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — Just Some Reviews</title>
+<meta name="description" content="How Just Some Reviews handles your information.">
+<script>
+  try {
+    const saved = localStorage.getItem('theme');
+    if(saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+  } catch(e) {}
+</script>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root{
+    color-scheme:light;
+    --desk:#F4F5F8; --paper:rgba(255,255,255,0.7); --sheet-edge:rgba(28,32,40,0.08);
+    --ink:#1C1B19; --ink-soft:#575A61; --rule:#E6E8EC; --tint:#F4F5F8;
+    --film:#2F6F6E; --music:#6B4E8E; --tv:#B08B1E;
+    --glow-a:rgba(47,111,110,0.16); --glow-b:rgba(107,78,142,0.14);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --desk:#161513; --paper:rgba(33,31,28,0.7); --sheet-edge:rgba(255,255,255,0.07);
+      --ink:#ECE7DD; --ink-soft:#A8A298; --rule:#37342F; --tint:#25231F;
+      --glow-a:rgba(47,111,110,0.22); --glow-b:rgba(107,78,142,0.2);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --desk:#161513; --paper:rgba(33,31,28,0.7); --sheet-edge:rgba(255,255,255,0.07);
+    --ink:#ECE7DD; --ink-soft:#A8A298; --rule:#37342F; --tint:#25231F;
+    --glow-a:rgba(47,111,110,0.22); --glow-b:rgba(107,78,142,0.2);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--desk);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.6;padding:clamp(20px, 6vh, 56px) 14px 56px;}
+  body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(42vmax 34vmax at 8% 6%, var(--glow-a), transparent 70%), radial-gradient(38vmax 32vmax at 96% 60%, var(--glow-b), transparent 70%);}
+  .card{max-width:720px;margin:0 auto;background:var(--paper);border:1px solid var(--sheet-edge);border-top:3px solid var(--ink);border-radius:14px;padding:34px 36px 30px;
+    backdrop-filter:blur(20px) saturate(170%);-webkit-backdrop-filter:blur(20px) saturate(170%);box-shadow:0 10px 30px -18px rgba(0,0,0,.25);}
+  .brand{display:inline-block;font-size:0.72rem;font-weight:600;letter-spacing:0.08em;color:var(--ink-soft);text-decoration:none;margin-bottom:6px;}
+  .brand:hover{color:var(--ink);}
+  h1{font-family:'Newsreader',Georgia,serif;font-style:italic;font-weight:600;font-size:2.2rem;line-height:1.15;margin:0 0 4px;}
+  .updated{color:var(--ink-soft);font-size:0.85rem;margin:0 0 22px;}
+  .summary{background:var(--tint);border:1px solid var(--rule);border-left:3px solid var(--film);border-radius:10px;padding:14px 18px;margin:0 0 26px;}
+  .summary strong{display:block;margin-bottom:4px;}
+  .summary ul{margin:0;padding-left:1.15em;}
+  h2{font-family:'Newsreader',Georgia,serif;font-weight:600;font-size:1.3rem;margin:30px 0 6px;}
+  p{margin:0 0 12px;}
+  ul{margin:0 0 12px;padding-left:1.2em;}
+  li{margin-bottom:6px;}
+  a{color:var(--ink);text-underline-offset:3px;}
+  .svc{display:grid;grid-template-columns:150px 1fr;gap:4px 16px;margin:6px 0 12px;padding:0;list-style:none;}
+  .svc li{margin:0;padding:8px 0;border-top:1px solid var(--rule);}
+  .svc li:nth-child(odd){font-weight:600;}
+  .back{display:inline-block;margin-top:22px;font-weight:600;}
+  @media (max-width: 560px){
+    .card{padding:24px 18px 22px;}
+    h1{font-size:1.8rem;}
+    .svc{grid-template-columns:1fr;gap:0;}
+    .svc li:nth-child(even){border-top:none;padding-top:0;}
+  }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .card{background:var(--desk);} }
+</style>
+</head>
+<body>
+<main class="card">
+  <a class="brand" href="/">JUST SOME REVIEWS</a>
+  <h1>Privacy</h1>
+  <p class="updated">Last updated October 7, 2026</p>
+
+  <div class="summary">
+    <strong>The short version</strong>
+    <ul>
+      <li>This is a personal review site. There are no ads, no analytics and no tracking cookies.</li>
+      <li>If you make an account, I keep your name, email and what you post, only so the site can work.</li>
+      <li>I never sell or share your information for marketing.</li>
+      <li>You can ask me to delete your account at any time.</li>
+    </ul>
+  </div>
+
+  <h2>Who runs this site</h2>
+  <p>Just Some Reviews (justsomereviews.com) is run by one person, the same person behind <a href="https://www.instagram.com/imo_reviewz/" target="_blank" rel="noopener noreferrer">@imo_reviewz</a> on Instagram. If you have a question about your information, send me a message there.</p>
+
+  <h2>If you just read the reviews</h2>
+  <p>You don't need an account to read anything, and I don't collect anything about you. Like every website, the services that deliver the pages (listed below) can see technical details such as your IP address and browser type while the page loads.</p>
+
+  <h2>If you create an account</h2>
+  <p>When you sign up, I keep:</p>
+  <ul>
+    <li><strong>Your first and last name.</strong> These are shown next to your comments, so other visitors can see them.</li>
+    <li><strong>Your email address.</strong> It's used to log you in, confirm your account and reset your password. It's never shown on the site, and I don't send newsletters or marketing.</li>
+    <li><strong>Your password.</strong> It's stored scrambled (hashed) by the account service, so not even I can see it. When you choose a password, the site checks whether it has appeared in a known data breach, using Have I Been Pwned. Only the first 5 characters of a scrambled fingerprint of the password are sent, never the password itself.</li>
+    <li><strong>Your avatar icon and color.</strong></li>
+  </ul>
+
+  <h2>What you post</h2>
+  <p>Your comments, replies, any images or GIFs you attach, your likes and thumbs-downs, and your comment likes are saved so they can be shown on the site. Comments are public. You can edit or delete your own comments at any time.</p>
+  <p>Poll votes are private. Other visitors only see the vote totals, never who voted for what.</p>
+
+  <h2>What's stored on your device</h2>
+  <p>The site doesn't use tracking cookies. It saves a few small things in your browser's storage so it works the way you expect:</p>
+  <ul>
+    <li>your login, so you stay signed in</li>
+    <li>your Light, Dark or System appearance choice</li>
+    <li>whether you've already seen the "swipe between tabs" tip</li>
+    <li>a random ID used by the GIF search, which isn't linked to your name or email</li>
+  </ul>
+  <p>The "are you human?" check on the sign-up and log-in forms comes from Cloudflare Turnstile. It may use its own small, security-only cookies or signals from your device to tell people apart from bots.</p>
+
+  <h2>Services that help run the site</h2>
+  <p>These companies handle parts of the site. Each one only gets what it needs to do its job:</p>
+  <ul class="svc">
+    <li>GitHub Pages</li><li>Hosts the website's pages.</li>
+    <li>Supabase</li><li>Stores accounts, comments, likes, poll votes and uploaded images.</li>
+    <li>Cloudflare</li><li>Runs the web address and the "are you human?" check.</li>
+    <li>Resend</li><li>Sends account emails, like confirmations and password resets.</li>
+    <li>KLIPY</li><li>Powers the GIF search. Your search words and the random GIF ID go to KLIPY, and GIF images load from their servers.</li>
+    <li>jsDelivr</li><li>Delivers some of the code the site runs on, like the emoji picker.</li>
+    <li>Have I Been Pwned</li><li>Checks new passwords against known breaches, as described above.</li>
+  </ul>
+  <p>The site's fonts are stored on this site, so loading a page doesn't contact Google.</p>
+
+  <h2>What I don't do</h2>
+  <ul>
+    <li>I don't sell, rent or trade your information.</li>
+    <li>I don't run ads or ad trackers.</li>
+    <li>I don't use analytics tools that follow you around the web.</li>
+  </ul>
+
+  <h2>How long things are kept</h2>
+  <p>Your account and posts stay until you delete them or ask me to. Deleted comments are removed from the site right away.</p>
+
+  <h2>Your choices</h2>
+  <ul>
+    <li><strong>Edit or delete</strong> your comments and change your avatar on the site whenever you like.</li>
+    <li><strong>See or delete your data:</strong> message <a href="https://www.instagram.com/imo_reviewz/" target="_blank" rel="noopener noreferrer">@imo_reviewz</a> on Instagram. I'll send you a copy or delete your account and everything you posted, normally within 30 days.</li>
+  </ul>
+
+  <h2>Kids</h2>
+  <p>This site isn't meant for children under 13, and I don't knowingly collect information from them. If you think a child has made an account, let me know and I'll remove it.</p>
+
+  <h2>Changes</h2>
+  <p>If this page changes, I'll update the date at the top. Big changes will be announced on the site.</p>
+
+  <a class="back" href="/">&larr; Back to the reviews</a>
+</main>
+</body>
+</html>
